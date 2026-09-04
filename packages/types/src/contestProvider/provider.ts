@@ -8,7 +8,7 @@ type FetchError =
   | { type: "fetch_error"; status: number; error: string };
 type UnexpectedError = { type: "unexpected_error"; message: string };
 
-type AuthError = { type: "auth_error" };
+type AuthError = { type: "auth_error"; reason: "invalid_credentials" };
 export type ContestProvider<S extends StorageType, LA extends Record<string, JSONPrimitive>, LO> = {
   readonly name: string;
   fetchContest(

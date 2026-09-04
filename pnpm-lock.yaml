@@ -208,6 +208,9 @@ catalogs:
     '@types/node':
       specifier: ^24
       version: 24.13.3
+    jiti:
+      specifier: ^2.7.0
+      version: 2.7.0
     valibot:
       specifier: ^1.4.2
       version: 1.4.2
@@ -234,6 +237,9 @@ importers:
 
   packages/core:
     dependencies:
+      jiti:
+        specifier: 'catalog:'
+        version: 2.7.0
       valibot:
         specifier: 'catalog:'
         version: 1.4.2(typescript@7.0.2)
@@ -1867,8 +1873,7 @@ snapshots:
   fsevents@2.3.3:
     optional: true
 
-  jiti@2.7.0:
-    optional: true
+  jiti@2.7.0: {}
 
   js-tokens@4.0.0: {}
 

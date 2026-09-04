@@ -36,6 +36,7 @@
     "vite-plus": "catalog:"
   },
   "dependencies": {
+    "jiti": "catalog:",
     "valibot": "catalog:"
   }
 }

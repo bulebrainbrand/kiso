@@ -80,7 +80,7 @@ export const kisoFetch: FetchFn = (input, init, options) => {
   const run = async (): Promise<Result<Response, import("@kiso/types").FetchError>> => {
     for (let attempt = 0; ; attempt++) {
       const controller = new AbortController();
-      const userSignal = init?.signal;
+      const userSignal = init?.signal ?? (input instanceof Request ? input.signal : undefined);
       if (userSignal?.aborted) {
         return new Err(toAbortError(url, userSignal.reason));
       }

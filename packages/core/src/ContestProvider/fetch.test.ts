@@ -242,4 +242,39 @@ describe("kisoFetch", () => {
       expect.unreachable();
     }
   });
+
+  it("Request の signal を abort すると fetch がキャンセルされる", async () => {
+    const mock = vi.fn(
+      (_input: unknown, init?: RequestInit) =>
+        new Promise<Response>((_resolve, reject) => {
+          if (init?.signal?.aborted) {
+            reject(init.signal.reason);
+            return;
+          }
+          init?.signal?.addEventListener("abort", () => {
+            reject(init.signal?.reason);
+          });
+        }),
+    );
+    vi.stubGlobal("fetch", mock);
+    const controller = new AbortController();
+    const reason = new Error("cancel request signal");
+    const request = new Request("https://example.com/request-signal", {
+      signal: controller.signal,
+    });
+    setTimeout(() => {
+      controller.abort(reason);
+    }, 10);
+    const result = await kisoFetch(request);
+    expect(mock).toHaveBeenCalledTimes(1);
+    if (result.isErr()) {
+      expect(result.error).toEqual({
+        type: "abort_error",
+        url: "https://example.com/request-signal",
+        reason,
+      });
+    } else {
+      expect.unreachable();
+    }
+  });
 });

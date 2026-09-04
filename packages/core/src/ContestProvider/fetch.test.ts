@@ -200,4 +200,31 @@ describe("kisoFetch", () => {
       expect.unreachable();
     }
   });
+
+  it("リトライ待機中に abort されると promptly に abort_error で終わる", async () => {
+    const mock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response("e", { status: 500 }))
+      .mockResolvedValueOnce(okResponse());
+    vi.stubGlobal("fetch", mock);
+    const controller = new AbortController();
+    const reason = new Error("cancel during backoff");
+    setTimeout(() => {
+      controller.abort(reason);
+    }, 10);
+    const startedAt = Date.now();
+    const result = await kisoFetch(
+      "https://example.com/",
+      { signal: controller.signal },
+      { maxRetries: 1, initialDelayMs: 1000, backoff: "fixed" },
+    );
+    const elapsedMs = Date.now() - startedAt;
+    expect(mock).toHaveBeenCalledTimes(1);
+    expect(elapsedMs).toBeLessThan(1000);
+    if (result.isErr()) {
+      expect(result.error).toEqual({ type: "abort_error", url: "https://example.com/", reason });
+    } else {
+      expect.unreachable();
+    }
+  });
 });

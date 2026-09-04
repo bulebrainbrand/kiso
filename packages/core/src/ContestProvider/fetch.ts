@@ -34,10 +34,21 @@ export const computeDelay = (
   return Math.min(base, maxDelayMs);
 };
 
-const sleep = (ms: number): Promise<void> =>
-  new Promise((resolve) => {
-    setTimeout(resolve, ms);
+const sleep = (ms: number, signal?: AbortSignal | null): Promise<void> => {
+  if (signal?.aborted) return Promise.reject(signal.reason);
+  if (ms <= 0) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    const onAbort = () => {
+      clearTimeout(timeoutId);
+      reject(signal?.reason);
+    };
+    const timeoutId = setTimeout(() => {
+      signal?.removeEventListener("abort", onAbort);
+      resolve();
+    }, ms);
+    signal?.addEventListener("abort", onAbort, { once: true });
   });
+};
 
 const normalizeOptions = (options?: FetchOptions) => {
   const maxRetries = Math.max(0, Math.floor(options?.maxRetries ?? DEFAULT_MAX_RETRIES));
@@ -92,7 +103,11 @@ export const kisoFetch: FetchFn = (input, init, options) => {
         userSignal?.removeEventListener("abort", onUserAbort);
         if (timedOut) {
           if (attempt < maxRetries) {
-            await sleep(computeDelay(attempt, initialDelayMs, backoff, maxDelayMs));
+            try {
+              await sleep(computeDelay(attempt, initialDelayMs, backoff, maxDelayMs), userSignal);
+            } catch (reason) {
+              return new Err(toAbortError(url, reason));
+            }
             continue;
           }
           return new Err({ type: "timeout_error", url, timeoutMs: timeoutMs ?? 0 });
@@ -102,7 +117,11 @@ export const kisoFetch: FetchFn = (input, init, options) => {
         }
         const message = error instanceof Error ? error.message : String(error);
         if (attempt < maxRetries) {
-          await sleep(computeDelay(attempt, initialDelayMs, backoff, maxDelayMs));
+          try {
+            await sleep(computeDelay(attempt, initialDelayMs, backoff, maxDelayMs), userSignal);
+          } catch (reason) {
+            return new Err(toAbortError(url, reason));
+          }
           continue;
         }
         return new Err({ type: "network_error", url, message, cause: error });
@@ -119,7 +138,11 @@ export const kisoFetch: FetchFn = (input, init, options) => {
       }
       const retryable = isRetryableStatus(response.status, retryOn);
       if (retryable && attempt < maxRetries) {
-        await sleep(computeDelay(attempt, initialDelayMs, backoff, maxDelayMs));
+        try {
+          await sleep(computeDelay(attempt, initialDelayMs, backoff, maxDelayMs), userSignal);
+        } catch (reason) {
+          return new Err(toAbortError(url, reason));
+        }
         continue;
       }
       return new Err({

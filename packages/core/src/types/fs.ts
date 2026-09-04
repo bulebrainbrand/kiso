@@ -1,2 +1,2 @@
-import fs from "fs";
-export type FS = typeof fs;
+import type { IFs } from "memfs";
+export type FS = IFs;

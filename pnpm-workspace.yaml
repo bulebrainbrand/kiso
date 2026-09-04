@@ -5,7 +5,7 @@ catalogMode: prefer
 
 catalog:
   "@types/node": ^24
-  '@vitest/coverage-v8': 4.1.11
+  "@vitest/coverage-v8": 4.1.11
   jiti: ^2.7.0
   memfs: ^4.69.1
   neverthrow: ^8.2.0

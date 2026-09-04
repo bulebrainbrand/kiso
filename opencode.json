@@ -13,7 +13,8 @@
       "find *": "allow",
       "grep *": "allow",
       "head *": "allow",
-      "cat *": "allow"
+      "cat *": "allow",
+      "tail *": "allow"
     },
     "todowrite": "allow",
     "grep": "allow",

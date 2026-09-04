@@ -1,21 +1,23 @@
 import type { ResultAsync } from "neverthrow";
-import type { JSONPrimitive, StorageType } from "./storage.ts";
+import type { JSONPrimitive, StorageError, StorageType } from "./storage.ts";
 import type { Contest } from "../contest.ts";
 import type { BaseContext } from "./context.ts";
 import type { LoginSchema } from "./login.ts";
-type FetchError =
+export type FetchError =
   | { type: "not_found"; url: string }
   | { type: "fetch_error"; status: number; error: string };
-type UnexpectedError = { type: "unexpected_error"; message: string };
 
-type AuthError = { type: "auth_error" };
-export type ContestProvider<S extends StorageType, LA extends Record<string, JSONPrimitive>, LO> = {
+export type AuthError = { type: "auth_error"; reason: "invalid_credentials" };
+
+export type ProviderError = StorageError | FetchError | AuthError;
+export type ContestProvider<
+  S extends StorageType,
+  LA extends Record<string, JSONPrimitive>,
+  LO = LA,
+> = {
   readonly name: string;
-  fetchContest(
-    ctx: BaseContext<S>,
-    contestId: string,
-  ): ResultAsync<Contest, FetchError | UnexpectedError | AuthError>;
+  fetchContest(ctx: BaseContext<S>, contestId: string): ResultAsync<Contest, ProviderError>;
   loginSchema: LoginSchema<LA, LO>;
-  login(ctx: BaseContext<S>, credentials: LO): ResultAsync<void, UnexpectedError | AuthError>;
-  whoami(ctx: BaseContext<S>): ResultAsync<string, AuthError | UnexpectedError>;
+  login(ctx: BaseContext<S>, credentials: LO): ResultAsync<void, ProviderError>;
+  whoami(ctx: BaseContext<S>): ResultAsync<string, ProviderError>;
 };

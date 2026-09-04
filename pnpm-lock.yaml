@@ -269,6 +269,28 @@ importers:
         specifier: 'catalog:'
         version: 0.3.0(@types/node@24.13.3)(@vitest/coverage-v8@4.1.11)(@voidzero-dev/vite-plus-core@0.3.0(@types/node@24.13.3)(jiti@2.7.0)(typescript@7.0.2)(yaml@2.9.0))(jiti@2.7.0)(typescript@7.0.2)(yaml@2.9.0)
 
+  packages/prov-yukicoder:
+    dependencies:
+      neverthrow:
+        specifier: 'catalog:'
+        version: 8.2.0
+      valibot:
+        specifier: 'catalog:'
+        version: 1.4.2(typescript@7.0.2)
+    devDependencies:
+      '@kiso/types':
+        specifier: workspace:*
+        version: link:../types
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.13.3
+      vite:
+        specifier: 'catalog:'
+        version: '@voidzero-dev/vite-plus-core@0.3.0(@types/node@24.13.3)(jiti@2.7.0)(typescript@7.0.2)(yaml@2.9.0)'
+      vite-plus:
+        specifier: 'catalog:'
+        version: 0.3.0(@types/node@24.13.3)(@vitest/coverage-v8@4.1.11)(@voidzero-dev/vite-plus-core@0.3.0(@types/node@24.13.3)(jiti@2.7.0)(typescript@7.0.2)(yaml@2.9.0))(jiti@2.7.0)(typescript@7.0.2)(yaml@2.9.0)
+
   packages/types:
     dependencies:
       neverthrow:

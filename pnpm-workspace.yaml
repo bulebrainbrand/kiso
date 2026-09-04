@@ -6,6 +6,7 @@ catalogMode: prefer
 catalog:
   "@types/node": ^24
   jiti: ^2.7.0
+  neverthrow: ^8.2.0
   typescript: ^7.0.2
   valibot: ^1.4.2
   vite: npm:@voidzero-dev/vite-plus-core@0.3.0

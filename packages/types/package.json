@@ -1,0 +1,40 @@
+{
+  "name": "@kiso/types",
+  "version": "0.0.0",
+  "description": "A type difinition for kiso",
+  "homepage": "https://github.com/bulebrainbrand/core#readme",
+  "bugs": {
+    "url": "https://github.com/bulebrainbrand/kiso/issues"
+  },
+  "license": "MIT",
+  "author": "bulebrainbrand",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bulebrainbrand/kiso.git"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "exports": {
+    ".": "./dist/index.mjs",
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "vp pack",
+    "dev": "vp pack --watch",
+    "test": "vp test",
+    "check": "vp check",
+    "prepublishOnly": "vp run build"
+  },
+  "devDependencies": {
+    "vite": "catalog:",
+    "vite-plus": "catalog:"
+  },
+  "dependencies": {
+    "neverthrow": "catalog:"
+  }
+}

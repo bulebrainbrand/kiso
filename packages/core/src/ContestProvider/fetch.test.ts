@@ -201,6 +201,21 @@ describe("kisoFetch", () => {
     }
   });
 
+  it("maxRetries: Infinity は有限limitに倒して無限ループしない", async () => {
+    const mock = vi.fn(async () => new Response("e", { status: 500, statusText: "ISE" }));
+    vi.stubGlobal("fetch", mock);
+    const result = await kisoFetch("https://example.com/", undefined, {
+      maxRetries: Infinity,
+      initialDelayMs: 0,
+    });
+    expect(mock).toHaveBeenCalledTimes(1);
+    if (result.isErr()) {
+      expect(result.error).toEqual({ type: "fetch_error", status: 500, error: "ISE" });
+    } else {
+      expect.unreachable();
+    }
+  });
+
   it("リトライ待機中に abort されると promptly に abort_error で終わる", async () => {
     const mock = vi
       .fn()

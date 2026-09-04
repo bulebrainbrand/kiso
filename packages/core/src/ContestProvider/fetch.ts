@@ -51,7 +51,10 @@ const sleep = (ms: number, signal?: AbortSignal | null): Promise<void> => {
 };
 
 const normalizeOptions = (options?: FetchOptions) => {
-  const maxRetries = Math.max(0, Math.floor(options?.maxRetries ?? DEFAULT_MAX_RETRIES));
+  const rawMaxRetries = options?.maxRetries ?? DEFAULT_MAX_RETRIES;
+  const maxRetries = Number.isFinite(rawMaxRetries)
+    ? Math.max(0, Math.floor(rawMaxRetries))
+    : DEFAULT_MAX_RETRIES;
   const initialDelayMs = Math.max(0, options?.initialDelayMs ?? DEFAULT_INITIAL_DELAY_MS);
   const backoff = options?.backoff ?? DEFAULT_BACKOFF;
   const maxDelayMs = options?.maxDelayMs;

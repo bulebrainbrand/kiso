@@ -1,6 +1,5 @@
 import * as v from "valibot";
 import { languagePluginSchema } from "@kiso/types";
-import type { Zlib } from "zlib";
 
 const uniqueStringOrStringArraySchema = v.pipe(
   v.union([v.string(), v.array(v.string())]),

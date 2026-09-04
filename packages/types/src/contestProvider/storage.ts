@@ -13,6 +13,13 @@ export type JSONParseError = { type: "parse_error"; message: string };
 export type JSONStringifyError = { type: "stringify_error"; message: string };
 export type UnexpectedError = { type: "unexpected_error"; message: unknown };
 
+export type StorageError =
+  | FileReadError
+  | FileWriteError
+  | JSONParseError
+  | JSONStringifyError
+  | UnexpectedError;
+
 export type StorageContext<T extends StorageType> = {
   getItem<K extends keyof T>(
     keyName: K,

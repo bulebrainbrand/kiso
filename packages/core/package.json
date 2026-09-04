@@ -30,13 +30,14 @@
     "check": "vp check",
     "prepublishOnly": "vp run build"
   },
-  "devDependencies": {
-    "@types/node": "catalog:",
-    "vite": "catalog:",
-    "vite-plus": "catalog:"
-  },
   "dependencies": {
     "jiti": "catalog:",
     "valibot": "catalog:"
+  },
+  "devDependencies": {
+    "@kiso/types": "workspace:*",
+    "@types/node": "catalog:",
+    "vite": "catalog:",
+    "vite-plus": "catalog:"
   }
 }

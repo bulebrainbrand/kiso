@@ -13,11 +13,16 @@
     "url": "git+https://github.com/bulebrainbrand/kiso.git"
   },
   "files": [
-    "dist"
+    "dist",
+    "src"
   ],
   "type": "module",
   "exports": {
-    ".": "./dist/index.mjs",
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.mjs",
+      "types": "./src/index.ts"
+    },
     "./package.json": "./package.json"
   },
   "publishConfig": {
@@ -30,11 +35,12 @@
     "check": "vp check",
     "prepublishOnly": "vp run build"
   },
+  "dependencies": {
+    "neverthrow": "catalog:",
+    "valibot": "catalog:"
+  },
   "devDependencies": {
     "vite": "catalog:",
     "vite-plus": "catalog:"
-  },
-  "dependencies": {
-    "neverthrow": "catalog:"
   }
 }

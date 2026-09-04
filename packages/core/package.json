@@ -38,6 +38,7 @@
   "devDependencies": {
     "@kiso/types": "workspace:*",
     "@types/node": "catalog:",
+    "memfs": "catalog:",
     "vite": "catalog:",
     "vite-plus": "catalog:"
   }

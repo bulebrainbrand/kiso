@@ -15,6 +15,7 @@
       "head *": "allow",
       "cat *": "allow"
     },
+    "todowrite": "allow",
     "grep": "allow",
     "external_directory": "ask",
     "glob": "allow",

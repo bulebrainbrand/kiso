@@ -31,7 +31,6 @@
     "prepublishOnly": "vp run build"
   },
   "dependencies": {
-    "jiti": "catalog:",
     "neverthrow": "catalog:",
     "valibot": "catalog:"
   },

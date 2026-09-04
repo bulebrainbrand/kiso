@@ -1,19 +1,33 @@
-import { join, resolve } from "node:path";
-import { memfs } from "memfs";
-import { describe, expect, it } from "vite-plus/test";
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterEach, describe, expect, it } from "vite-plus/test";
 import { KISO_CONFIG_FILE_NAME } from "../constants.ts";
-import type { FS } from "../types/fs.ts";
 import { findConfig } from "./findConfig.ts";
-
-const setupFs = (json: Record<string, string | null>): FS => memfs(json, "/").fs as unknown as FS;
 
 const CONFIG_CONTENT = "export default {};\n";
 
+const tmpRoots: string[] = [];
+
+const makeTempRoot = (): string => {
+  const dir = mkdtempSync(join(tmpdir(), "kiso-find-config-"));
+  tmpRoots.push(dir);
+  return dir;
+};
+
+afterEach(() => {
+  while (tmpRoots.length > 0) {
+    const dir = tmpRoots.pop();
+    if (dir) rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 describe("findConfig", () => {
   it("cwd直下のconfigを見つける", () => {
-    const cwd = resolve("/proj/a");
-    const fs = setupFs({ [join(cwd, KISO_CONFIG_FILE_NAME)]: CONFIG_CONTENT });
-    const result = findConfig(fs, cwd);
+    const cwd = join(makeTempRoot(), "a");
+    mkdirSync(cwd, { recursive: true });
+    writeFileSync(join(cwd, KISO_CONFIG_FILE_NAME), CONFIG_CONTENT);
+    const result = findConfig(cwd);
     expect(result.isOk()).toBe(true);
     if (result.isOk()) {
       expect(result.value).toBe(join(cwd, KISO_CONFIG_FILE_NAME));
@@ -21,10 +35,11 @@ describe("findConfig", () => {
   });
 
   it("上位階層のconfigを見つける", () => {
-    const root = resolve("/proj");
+    const root = makeTempRoot();
     const cwd = join(root, "a", "b", "c");
-    const fs = setupFs({ [join(root, KISO_CONFIG_FILE_NAME)]: CONFIG_CONTENT });
-    const result = findConfig(fs, cwd);
+    mkdirSync(cwd, { recursive: true });
+    writeFileSync(join(root, KISO_CONFIG_FILE_NAME), CONFIG_CONTENT);
+    const result = findConfig(cwd);
     expect(result.isOk()).toBe(true);
     if (result.isOk()) {
       expect(result.value).toBe(join(root, KISO_CONFIG_FILE_NAME));
@@ -32,14 +47,13 @@ describe("findConfig", () => {
   });
 
   it("最も近いconfigを優先する", () => {
-    const root = resolve("/proj");
+    const root = makeTempRoot();
     const middle = join(root, "a");
     const cwd = join(middle, "b", "c");
-    const fs = setupFs({
-      [join(root, KISO_CONFIG_FILE_NAME)]: CONFIG_CONTENT,
-      [join(middle, KISO_CONFIG_FILE_NAME)]: CONFIG_CONTENT,
-    });
-    const result = findConfig(fs, cwd);
+    mkdirSync(cwd, { recursive: true });
+    writeFileSync(join(root, KISO_CONFIG_FILE_NAME), CONFIG_CONTENT);
+    writeFileSync(join(middle, KISO_CONFIG_FILE_NAME), CONFIG_CONTENT);
+    const result = findConfig(cwd);
     expect(result.isOk()).toBe(true);
     if (result.isOk()) {
       expect(result.value).toBe(join(middle, KISO_CONFIG_FILE_NAME));
@@ -47,8 +61,9 @@ describe("findConfig", () => {
   });
 
   it("見つからない場合はnot_foundを返す", () => {
-    const fs = setupFs({});
-    const result = findConfig(fs, resolve("/proj/a/b"));
+    const cwd = join(makeTempRoot(), "a", "b");
+    mkdirSync(cwd, { recursive: true });
+    const result = findConfig(cwd);
     expect(result.isErr()).toBe(true);
     if (result.isErr()) {
       expect(result.error).toEqual({ type: "not_found" });
@@ -56,10 +71,10 @@ describe("findConfig", () => {
   });
 
   it("同名のディレクトリがある場合はis_directoryを返す", () => {
-    const cwd = resolve("/proj/a");
+    const cwd = join(makeTempRoot(), "a");
     const candidate = join(cwd, KISO_CONFIG_FILE_NAME);
-    const fs = setupFs({ [candidate]: null });
-    const result = findConfig(fs, cwd);
+    mkdirSync(candidate, { recursive: true });
+    const result = findConfig(cwd);
     expect(result.isErr()).toBe(true);
     if (result.isErr()) {
       expect(result.error).toEqual({ type: "is_directory", path: candidate });
@@ -67,15 +82,14 @@ describe("findConfig", () => {
   });
 
   it("同名ディレクトリが近くにある場合は親のconfigを使わずis_directoryを返す", () => {
-    const root = resolve("/proj");
+    const root = makeTempRoot();
     const middle = join(root, "a");
     const cwd = join(middle, "b", "c");
+    mkdirSync(cwd, { recursive: true });
     const dirCandidate = join(middle, KISO_CONFIG_FILE_NAME);
-    const fs = setupFs({
-      [join(root, KISO_CONFIG_FILE_NAME)]: CONFIG_CONTENT,
-      [dirCandidate]: null,
-    });
-    const result = findConfig(fs, cwd);
+    writeFileSync(join(root, KISO_CONFIG_FILE_NAME), CONFIG_CONTENT);
+    mkdirSync(dirCandidate, { recursive: true });
+    const result = findConfig(cwd);
     expect(result.isErr()).toBe(true);
     if (result.isErr()) {
       expect(result.error).toEqual({ type: "is_directory", path: dirCandidate });

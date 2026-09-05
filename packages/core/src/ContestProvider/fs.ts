@@ -1,7 +1,7 @@
 import fs from "node:fs";
 
-import type { FsContext, FsError, FsStat } from "@kiso/types";
-import { Err, Ok, type Result } from "neverthrow";
+import type { FsContext, FsError } from "@kiso/types";
+import { Result } from "neverthrow";
 
 const toReadError = (error: unknown): FsError => {
   if (error instanceof Error) {
@@ -31,50 +31,36 @@ const toWriteError = (error: unknown): FsError => {
   return { type: "unexpected_error", message: JSON.stringify(error) };
 };
 
+const safeStat = Result.fromThrowable(
+  (path: string) => fs.statSync(path),
+  toReadError,
+);
+const safeReadFile = Result.fromThrowable(
+  (path: string) => fs.readFileSync(path, "utf-8"),
+  toReadError,
+);
+const safeWriteFile = Result.fromThrowable(
+  (path: string, content: string): void => {
+    fs.writeFileSync(path, content, "utf-8");
+  },
+  toWriteError,
+);
+const safeMkdir = Result.fromThrowable((path: string): void => {
+  fs.mkdirSync(path, { recursive: true });
+}, toWriteError);
+const safeRm = Result.fromThrowable((path: string): void => {
+  fs.rmSync(path, { recursive: true, force: true });
+}, toWriteError);
+
 export const kisoFs: FsContext = {
-  exists(path: string): boolean {
-    return fs.existsSync(path);
-  },
-  stat(path: string): Result<FsStat, FsError> {
-    try {
-      const stats = fs.statSync(path);
-      return new Ok({
-        isFile: stats.isFile(),
-        isDirectory: stats.isDirectory(),
-      });
-    } catch (error) {
-      return new Err(toReadError(error));
-    }
-  },
-  readFile(path: string): Result<string, FsError> {
-    try {
-      return new Ok(fs.readFileSync(path, "utf-8"));
-    } catch (error) {
-      return new Err(toReadError(error));
-    }
-  },
-  writeFile(path: string, content: string): Result<void, FsError> {
-    try {
-      fs.writeFileSync(path, content, "utf-8");
-      return new Ok(undefined);
-    } catch (error) {
-      return new Err(toWriteError(error));
-    }
-  },
-  mkdir(path: string): Result<void, FsError> {
-    try {
-      fs.mkdirSync(path, { recursive: true });
-      return new Ok(undefined);
-    } catch (error) {
-      return new Err(toWriteError(error));
-    }
-  },
-  rm(path: string): Result<void, FsError> {
-    try {
-      fs.rmSync(path, { recursive: true, force: true });
-      return new Ok(undefined);
-    } catch (error) {
-      return new Err(toWriteError(error));
-    }
-  },
+  exists: (path) => fs.existsSync(path),
+  stat: (path) =>
+    safeStat(path).map((stats) => ({
+      isFile: stats.isFile(),
+      isDirectory: stats.isDirectory(),
+    })),
+  readFile: (path) => safeReadFile(path),
+  writeFile: (path, content) => safeWriteFile(path, content),
+  mkdir: (path) => safeMkdir(path),
+  rm: (path) => safeRm(path),
 };

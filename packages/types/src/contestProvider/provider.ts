@@ -1,11 +1,9 @@
 import type { ResultAsync } from "neverthrow";
 import type { JSONPrimitive, StorageError, StorageType } from "./storage.ts";
+import type { FetchError } from "./fetch.ts";
 import type { Contest } from "../contest.ts";
 import type { BaseContext } from "./context.ts";
 import type { LoginSchema } from "./login.ts";
-export type FetchError =
-  | { type: "not_found"; url: string }
-  | { type: "fetch_error"; status: number; error: string };
 
 export type AuthError = { type: "auth_error"; reason: "invalid_credentials" };
 

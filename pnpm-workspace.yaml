@@ -10,6 +10,7 @@ catalog:
   jiti: ^2.7.0
   memfs: ^4.69.1
   neverthrow: ^8.2.0
+  node-html-parser: ^9.0.3
   typescript: ^7.0.2
   valibot: ^1.4.2
   vite: npm:@voidzero-dev/vite-plus-core@0.3.0

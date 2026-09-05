@@ -32,6 +32,7 @@
   },
   "dependencies": {
     "neverthrow": "catalog:",
+    "node-html-parser": "catalog:",
     "valibot": "catalog:"
   },
   "devDependencies": {

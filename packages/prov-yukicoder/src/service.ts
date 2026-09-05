@@ -8,7 +8,8 @@ import {
   type UnexpectedError,
   type ValidationError,
 } from "@kiso/types";
-import { Err, fromSafePromise, Ok, Result, ResultAsync } from "neverthrow";
+import { Err, fromPromise, Ok, Result, ResultAsync } from "neverthrow";
+import { parse, type HTMLElement } from "node-html-parser";
 import * as v from "valibot";
 
 import { yukicoderContestSchema } from "./schema/contest.ts";
@@ -36,12 +37,11 @@ export class YukiCoderService implements ContestProvider<
         backoff: "exponential",
       })
       .andThen((res) =>
-        fromSafePromise<unknown, UnexpectedError>(
-          res.json().catch((error) => {
-            throw {
-              type: "unexpected_error",
-              message: error,
-            } satisfies UnexpectedError;
+        fromPromise<unknown, UnexpectedError>(
+          res.json(),
+          (error): UnexpectedError => ({
+            type: "unexpected_error",
+            message: error,
           }),
         ),
       )
@@ -64,8 +64,39 @@ export class YukiCoderService implements ContestProvider<
         } satisfies ValidationError);
       });
   }
-  private fetchTestcase(ctx: YukicoderCtx, probremId: number): TestCase[] {
-    throw "";
+  private fetchTestcase(
+    ctx: YukicoderCtx,
+    probremId: number,
+  ): ResultAsync<TestCase[], ProviderError> {
+    return ctx
+      .fetch(`https://yukicoder.me/problems/no/${probremId}`)
+      .andThen((res) =>
+        fromPromise(res.text(), (error): UnexpectedError => ({
+          type: "unexpected_error",
+          message: error,
+        })),
+      )
+      .map((text) => this.extractTestCase(parse(text)));
+  }
+  private extractTestCase(html: HTMLElement): TestCase[] {
+    const sampleElements = html.querySelectorAll(".sample");
+    // div .sample
+    //   h5 .underline
+    //     span # test case file name
+    //   div .paragraph
+    //     button
+    //     h6
+    //     pre # input
+    //     h6
+    //     pre # output
+    return sampleElements.map((ele, i) => {
+      const name =
+        ele.querySelector("span")?.textContent ?? `kiso_placehoder_${i}`;
+      const [input, output] = ele
+        .querySelectorAll("pre")
+        .map((e) => e.textContent);
+      return { name, input, output };
+    });
   }
   whoami(ctx: YukicoderCtx) {
     return toAsync(

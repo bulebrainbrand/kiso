@@ -13,7 +13,7 @@ export const computeDelay = (
   return Math.min(base, maxDelayMs);
 };
 
-const sleep = (ms: number, signal?: AbortSignal | null): Promise<void> => {
+export const sleep = (ms: number, signal?: AbortSignal | null): Promise<void> => {
   if (signal?.aborted) return Promise.reject(signal.reason);
   if (ms <= 0) return Promise.resolve();
   return new Promise((resolve, reject) => {

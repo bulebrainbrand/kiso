@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import { computeDelay } from "./delay.ts";
+import { computeDelay, sleep, waitForRetry, type DelayConfig } from "./delay.ts";
 
 describe("computeDelay", () => {
   it("fixed は常に initialDelayMs", () => {
@@ -15,5 +15,68 @@ describe("computeDelay", () => {
 
   it("maxDelayMs で頭打ちになる", () => {
     expect(computeDelay(5, 100, "exponential", 250)).toBe(250);
+  });
+});
+
+describe("sleep", () => {
+  it("指定時間後に解決する", async () => {
+    const startedAt = Date.now();
+    await sleep(30);
+    expect(Date.now() - startedAt).toBeGreaterThanOrEqual(20);
+  });
+
+  it("0以下は即解決する", async () => {
+    await sleep(0);
+    await sleep(-1);
+  });
+
+  it("事前に abort 済みなら reason で reject する", async () => {
+    const reason = new Error("already aborted");
+    const controller = new AbortController();
+    controller.abort(reason);
+    await expect(sleep(1000, controller.signal)).rejects.toBe(reason);
+  });
+
+  it("待機中の abort でタイマーを破棄して reason で reject する", async () => {
+    const reason = new Error("abort during sleep");
+    const controller = new AbortController();
+    setTimeout(() => {
+      controller.abort(reason);
+    }, 10);
+    const startedAt = Date.now();
+    await expect(sleep(5000, controller.signal)).rejects.toBe(reason);
+    expect(Date.now() - startedAt).toBeLessThan(5000);
+  });
+
+  it("signal なしでは最後まで待つ", async () => {
+    await sleep(10);
+  });
+});
+
+describe("waitForRetry", () => {
+  const config: DelayConfig = { initialDelayMs: 0, backoff: "fixed", maxDelayMs: undefined };
+
+  it("待機完了で Ok を返す", async () => {
+    const result = await waitForRetry(0, config, "https://example.com/", undefined);
+    expect(result.isOk()).toBe(true);
+  });
+
+  it("待機中の abort で abort_error の Err を返す", async () => {
+    const reason = new Error("cancel backoff");
+    const controller = new AbortController();
+    setTimeout(() => {
+      controller.abort(reason);
+    }, 10);
+    const waiting: DelayConfig = { initialDelayMs: 5000, backoff: "fixed", maxDelayMs: undefined };
+    const result = await waitForRetry(0, waiting, "https://example.com/", controller.signal);
+    if (result.isErr()) {
+      expect(result.error).toEqual({
+        type: "abort_error",
+        url: "https://example.com/",
+        reason,
+      });
+    } else {
+      expect.unreachable();
+    }
   });
 });

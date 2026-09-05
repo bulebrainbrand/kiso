@@ -39,7 +39,7 @@ export const kisoFetch: FetchFn = (input, init, options) => {
 
 export { isMethodRetryable, resolveMethod, resolveUrl, resolveUserSignal } from "./request.ts";
 export { isRetryableStatus } from "./policy.ts";
-export { computeDelay } from "./delay.ts";
+export { computeDelay, sleep, waitForRetry } from "./delay.ts";
 export { decide } from "./decide.ts";
 export type { AttemptOutcome } from "./attempt.ts";
 export type { Decision } from "./decide.ts";

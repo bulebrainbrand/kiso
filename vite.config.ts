@@ -33,7 +33,7 @@ export default defineConfig({
     tasks: {
       coverage: {
         command: [
-          `git diff --name-only $(git log --reverse --format="%H" | head -n 1) HEAD | node scripts/testByFile.ts && node scripts/allTest.ts`,
+          `git diff --name-only $(git merge-base origin/main HEAD) HEAD | node scripts/testByFile.ts && node scripts/allTest.ts`,
         ],
         cwd: ".",
         cache: false,

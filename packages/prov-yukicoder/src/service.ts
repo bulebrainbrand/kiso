@@ -8,7 +8,7 @@ import {
   type UnexpectedError,
   type ValidationError,
 } from "@kiso/types";
-import { Err, fromPromise, Ok, Result, ResultAsync } from "neverthrow";
+import { errAsync, fromPromise, ResultAsync } from "neverthrow";
 import { parse, type HTMLElement } from "node-html-parser";
 import * as v from "valibot";
 
@@ -46,30 +46,35 @@ export class YukiCoderService implements ContestProvider<
         ),
       )
       .map((body) => v.safeParse(yukicoderContestSchema, body))
-      .andThen((result): Result<Contest, ValidationError> => {
-        if (result.success) {
-          const output = result.output;
-          return new Ok({
-            id: contestId,
-            probrems: output.Problems.map((probrem) => ({
-              id: String(probrem.ProblemId),
-              name: String(probrem.No),
-              testcases: this.fetchTestcase(ctx, probrem.ProblemId),
-            })),
-          } satisfies Contest);
+      .andThen((parsed): ResultAsync<Contest, ProviderError> => {
+        if (!parsed.success) {
+          return errAsync({
+            type: "validation_error",
+            issues: parsed.issues,
+          } satisfies ValidationError);
         }
-        return new Err({
-          type: "validation_error",
-          issues: result.issues,
-        } satisfies ValidationError);
+        const problems = parsed.output.Problems;
+        return ResultAsync.combine(
+          problems.map((prob) => this.fetchTestcase(ctx, prob.No)),
+        ).map(
+          (allTestcases) =>
+            ({
+              id: contestId,
+              probrems: problems.map((probrem, i) => ({
+                id: String(probrem.ProblemId),
+                name: String(probrem.No),
+                testcases: allTestcases[i] ?? [],
+              })),
+            }) satisfies Contest,
+        );
       });
   }
   private fetchTestcase(
     ctx: YukicoderCtx,
-    probremId: number,
+    problemNo: number,
   ): ResultAsync<TestCase[], ProviderError> {
     return ctx
-      .fetch(`https://yukicoder.me/problems/no/${probremId}`)
+      .fetch(`https://yukicoder.me/problems/no/${problemNo}`)
       .andThen((res) =>
         fromPromise(res.text(), (error): UnexpectedError => ({
           type: "unexpected_error",
@@ -89,14 +94,18 @@ export class YukiCoderService implements ContestProvider<
     //     pre # input
     //     h6
     //     pre # output
-    return sampleElements.map((ele, i) => {
+    const testcases: TestCase[] = [];
+    for (const [i, ele] of sampleElements.entries()) {
+      const pres = ele.querySelectorAll("pre");
+      const input = pres[0]?.textContent;
+      const output = pres[1]?.textContent;
+      if (input === undefined || output === undefined) continue;
       const name =
-        ele.querySelector("span")?.textContent ?? `kiso_placehoder_${i}`;
-      const [input, output] = ele
-        .querySelectorAll("pre")
-        .map((e) => e.textContent);
-      return { name, input, output };
-    });
+        ele.querySelector("span")?.textContent.trim()
+        || `kiso_placeholder_${i}`;
+      testcases.push({ name, input, output });
+    }
+    return testcases;
   }
   whoami(ctx: YukicoderCtx) {
     return toAsync(

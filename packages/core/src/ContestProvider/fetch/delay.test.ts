@@ -16,6 +16,18 @@ describe("computeDelay", () => {
   it("maxDelayMs で頭打ちになる", () => {
     expect(computeDelay(5, 100, "exponential", 250)).toBe(250);
   });
+
+  it("maxDelayMs なしでも指数オーバーフローは Node 上限に丸める", () => {
+    expect(computeDelay(1024, 100, "exponential", undefined)).toBe(2 ** 31 - 1);
+  });
+
+  it("maxDelayMs 指定は維持される", () => {
+    expect(computeDelay(1024, 100, "exponential", 250)).toBe(250);
+  });
+
+  it("Node 上限超えの maxDelayMs は Node 上限に丸める", () => {
+    expect(computeDelay(1024, 100, "exponential", Number.MAX_SAFE_INTEGER)).toBe(2 ** 31 - 1);
+  });
 });
 
 describe("sleep", () => {

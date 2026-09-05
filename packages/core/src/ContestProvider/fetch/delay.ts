@@ -2,6 +2,9 @@ import { Err, Ok, type Result } from "neverthrow";
 import type { FetchError, FetchOptions } from "@kiso/types";
 import { toAbortError } from "./policy.ts";
 
+// Node の setTimeout 上限。これを超えると TimeoutOverflowWarning のうえ約1msに丸められる。
+const MAX_TIMER_MS = 2 ** 31 - 1;
+
 export const computeDelay = (
   retryIndex: number,
   initialDelayMs: number,
@@ -9,8 +12,7 @@ export const computeDelay = (
   maxDelayMs: number | undefined,
 ): number => {
   const base = backoff === "exponential" ? initialDelayMs * 2 ** retryIndex : initialDelayMs;
-  if (maxDelayMs === undefined) return base;
-  return Math.min(base, maxDelayMs);
+  return Math.min(base, maxDelayMs ?? MAX_TIMER_MS, MAX_TIMER_MS);
 };
 
 export const sleep = (ms: number, signal?: AbortSignal | null): Promise<void> => {

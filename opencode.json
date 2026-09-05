@@ -23,7 +23,7 @@
       "git diff *": "allow",
       "git show *": "allow",
       "vp check *": "allow",
-      "vp test *": "allow",
+      "vpr test *": "allow",
       "wc *": "allow",
       "pwd *": "allow"
     },

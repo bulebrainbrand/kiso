@@ -1,3 +1,5 @@
+import { cloneInput } from "./request.ts";
+
 export type AttemptOutcome =
   | { type: "preAborted"; reason: unknown }
   | { type: "responded"; response: Response }
@@ -26,7 +28,7 @@ export const attemptOnce = async (
     }, timeoutMs);
   }
   try {
-    const response = await fetch(input, { ...init, signal: controller.signal });
+    const response = await fetch(cloneInput(input), { ...init, signal: controller.signal });
     return { type: "responded", response };
   } catch (error) {
     return {

@@ -34,6 +34,7 @@ export type RetryPolicy = {
   maxRetries: number;
   retryOn: NonNullable<FetchOptions["retryOn"]>;
   methodRetryable: boolean;
+  bodyRetryable: boolean;
   timeoutMs: number | undefined;
 };
 

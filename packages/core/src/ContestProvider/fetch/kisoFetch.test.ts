@@ -343,4 +343,40 @@ describe("kisoFetch", () => {
     expect(result.isErr()).toBe(true);
     expect(cancelled).toBe(true);
   });
+
+  it("Request ボディは試行ごとに複製されリトライできる", async () => {
+    const request = new Request("https://example.com/", { method: "PUT", body: "hello" });
+    const seen: string[] = [];
+    const mock = vi.fn(async (input: unknown) => {
+      seen.push(await (input as Request).text());
+      return seen.length === 1 ? new Response("e", { status: 500 }) : okResponse();
+    });
+    vi.stubGlobal("fetch", mock);
+    const result = await kisoFetch(request, undefined, { maxRetries: 1, initialDelayMs: 0 });
+    expect(mock).toHaveBeenCalledTimes(2);
+    expect(result.isOk()).toBe(true);
+    expect(seen).toEqual(["hello", "hello"]);
+  });
+
+  it("ストリームボディはリトライしない", async () => {
+    const stream = new ReadableStream({
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode("x"));
+        controller.close();
+      },
+    });
+    const mock = vi.fn(async () => new Response("e", { status: 500, statusText: "ISE" }));
+    vi.stubGlobal("fetch", mock);
+    const result = await kisoFetch(
+      "https://example.com/",
+      { method: "PUT", body: stream },
+      { maxRetries: 2, initialDelayMs: 0 },
+    );
+    expect(mock).toHaveBeenCalledTimes(1);
+    if (result.isErr()) {
+      expect(result.error).toEqual({ type: "fetch_error", status: 500, error: "ISE" });
+    } else {
+      expect.unreachable();
+    }
+  });
 });

@@ -19,3 +19,9 @@ export const resolveUserSignal = (
   init?: RequestInit,
 ): AbortSignal | null | undefined =>
   init?.signal ?? (input instanceof Request ? input.signal : undefined);
+
+export const cloneInput = (input: string | URL | Request): string | URL | Request =>
+  input instanceof Request ? input.clone() : input;
+
+export const isBodyRetryable = (init?: RequestInit): boolean =>
+  !(init?.body instanceof ReadableStream);

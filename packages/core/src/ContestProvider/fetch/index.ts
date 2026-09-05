@@ -1,6 +1,6 @@
 import { Err, ResultAsync, type Result } from "neverthrow";
 import type { FetchError, FetchFn } from "@kiso/types";
-import { isMethodRetryable, resolveUrl, resolveUserSignal } from "./request.ts";
+import { isBodyRetryable, isMethodRetryable, resolveUrl, resolveUserSignal } from "./request.ts";
 import { normalizeOptions, type RetryPolicy } from "./policy.ts";
 import { attemptOnce, discardBody } from "./attempt.ts";
 import { decide } from "./decide.ts";
@@ -12,7 +12,14 @@ export const kisoFetch: FetchFn = (input, init, options) => {
   const url = resolveUrl(input);
   const userSignal = resolveUserSignal(input, init);
   const methodRetryable = isMethodRetryable(input, init);
-  const policy: RetryPolicy = { url, maxRetries, retryOn, methodRetryable, timeoutMs };
+  const policy: RetryPolicy = {
+    url,
+    maxRetries,
+    retryOn,
+    methodRetryable,
+    bodyRetryable: isBodyRetryable(init),
+    timeoutMs,
+  };
 
   const run = async (): Promise<Result<Response, FetchError>> => {
     for (let attempt = 0; ; attempt++) {
@@ -37,7 +44,14 @@ export const kisoFetch: FetchFn = (input, init, options) => {
   return new ResultAsync(run());
 };
 
-export { isMethodRetryable, resolveMethod, resolveUrl, resolveUserSignal } from "./request.ts";
+export {
+  cloneInput,
+  isBodyRetryable,
+  isMethodRetryable,
+  resolveMethod,
+  resolveUrl,
+  resolveUserSignal,
+} from "./request.ts";
 export { isRetryableStatus } from "./policy.ts";
 export { computeDelay, sleep, waitForRetry } from "./delay.ts";
 export { decide } from "./decide.ts";

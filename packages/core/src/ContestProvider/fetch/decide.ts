@@ -8,7 +8,7 @@ export type Decision =
   | { type: "return"; result: Result<Response, FetchError>; discard?: Response };
 
 export const decide = (outcome: AttemptOutcome, policy: RetryPolicy, attempt: number): Decision => {
-  const retryable = attempt < policy.maxRetries && policy.methodRetryable;
+  const retryable = attempt < policy.maxRetries && policy.methodRetryable && policy.bodyRetryable;
   switch (outcome.type) {
     case "preAborted":
       return { type: "return", result: new Err(toAbortError(policy.url, outcome.reason)) };

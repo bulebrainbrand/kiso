@@ -10,6 +10,7 @@ describe("decide", () => {
     maxRetries: 1,
     retryOn: [500],
     methodRetryable: true,
+    bodyRetryable: true,
     timeoutMs: undefined,
   };
 
@@ -151,6 +152,36 @@ describe("decide", () => {
     expect(decide(preAborted, basePolicy, 0)).toEqual({
       type: "return",
       result: new Err({ type: "abort_error", url: "https://example.com/", reason }),
+    });
+  });
+
+  it("非再送ボディはステータス失敗でもリトライしない", () => {
+    const response = new Response("e", { status: 500, statusText: "ISE" });
+    const outcome: AttemptOutcome = { type: "responded", response };
+    expect(decide(outcome, { ...basePolicy, bodyRetryable: false }, 0)).toEqual({
+      type: "return",
+      result: new Err({ type: "fetch_error", status: 500, error: "ISE" }),
+      discard: response,
+    });
+  });
+
+  it("非再送ボディはネットワーク失敗でもリトライしない", () => {
+    const cause = new TypeError("fetch failed");
+    const outcome: AttemptOutcome = {
+      type: "thrown",
+      error: cause,
+      timedOut: false,
+      aborted: false,
+      abortReason: undefined,
+    };
+    expect(decide(outcome, { ...basePolicy, bodyRetryable: false }, 0)).toEqual({
+      type: "return",
+      result: new Err({
+        type: "network_error",
+        url: "https://example.com/",
+        message: "fetch failed",
+        cause,
+      }),
     });
   });
 });

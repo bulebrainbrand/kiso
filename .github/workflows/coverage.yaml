@@ -18,3 +18,4 @@ jobs:
           name: coverage
           path: .kiso-ci/
           retention-days: 1
+          include-hidden-files: true

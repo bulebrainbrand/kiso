@@ -22,7 +22,7 @@ type TestResult = Record<
 export function coverageToMarkdown(coverage: TestResult, headSha?: string): string {
   void coverage;
   void headSha;
-  return "";
+  return "gooooooooo";
 }
 
 const input = process.argv[2] ?? ".kiso-ci/test-result.json";

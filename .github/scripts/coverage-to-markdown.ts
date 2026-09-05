@@ -1,14 +1,14 @@
 import { existsSync, readFileSync } from "fs";
 import path from "path";
 
-import {
+import type {
   EachTestCoverageResult,
   FailedFile,
   NotFoundFile,
   NotRelatedFile,
   SuccessFile,
 } from "../../scripts/testByFile";
-import { AllTestResult } from "../../scripts/types";
+import type { AllTestResult } from "../../scripts/types";
 
 export interface WorkspaceMeta {
   workspace: string;

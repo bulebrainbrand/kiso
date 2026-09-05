@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
+import { Err, Ok } from "neverthrow";
 import {
   computeDelay,
   decide,
@@ -7,7 +8,6 @@ import {
   resolveMethod,
   resolveUrl,
   type AttemptOutcome,
-  type Decision,
   type RetryPolicy,
 } from "./fetch.ts";
 
@@ -75,80 +75,55 @@ describe("decide", () => {
     timeoutMs: undefined,
   };
 
-  const summarize = (decision: Decision) => ({
-    type: decision.type,
-    ok: decision.type === "return" ? decision.result.isOk() : undefined,
-    error:
-      decision.type === "return" && decision.result.isErr() ? decision.result.error : undefined,
-    discarded: decision.discard !== undefined,
-  });
-
   it("ok応答はそのまま返す", () => {
-    const outcome: AttemptOutcome = { type: "responded", response: new Response("ok") };
-    expect(summarize(decide(outcome, basePolicy, 0))).toEqual({
-      type: "return",
-      ok: true,
-      error: undefined,
-      discarded: false,
-    });
+    const response = new Response("ok");
+    const outcome: AttemptOutcome = { type: "responded", response };
+    expect(decide(outcome, basePolicy, 0)).toEqual({ type: "return", result: new Ok(response) });
   });
 
   it("404はnot_foundで応答を破棄する", () => {
-    const outcome: AttemptOutcome = {
-      type: "responded",
-      response: new Response("no", { status: 404 }),
-    };
-    expect(summarize(decide(outcome, basePolicy, 0))).toEqual({
+    const response = new Response("no", { status: 404 });
+    const outcome: AttemptOutcome = { type: "responded", response };
+    expect(decide(outcome, basePolicy, 0)).toEqual({
       type: "return",
-      ok: false,
-      error: { type: "not_found", url: "https://example.com/" },
-      discarded: true,
+      result: new Err({ type: "not_found", url: "https://example.com/" }),
+      discard: response,
     });
   });
 
   it("再試行可能な状態はretryし応答を破棄する", () => {
-    const outcome: AttemptOutcome = {
-      type: "responded",
-      response: new Response("e", { status: 500 }),
-    };
-    expect(summarize(decide(outcome, basePolicy, 0))).toEqual({
-      type: "retry",
-      ok: undefined,
-      error: undefined,
-      discarded: true,
+    const response = new Response("e", { status: 500 });
+    const outcome: AttemptOutcome = { type: "responded", response };
+    expect(decide(outcome, basePolicy, 0)).toEqual({ type: "retry", discard: response });
+  });
+
+  it("回数超過はfetch_errorで応答を破棄する", () => {
+    const exhaustedResponse = new Response("e", { status: 500, statusText: "ISE" });
+    const exhausted: AttemptOutcome = { type: "responded", response: exhaustedResponse };
+    expect(decide(exhausted, basePolicy, 1)).toEqual({
+      type: "return",
+      result: new Err({ type: "fetch_error", status: 500, error: "ISE" }),
+      discard: exhaustedResponse,
     });
   });
 
-  it("回数超過・対象外状態・非冪等メソッドはfetch_errorで応答を破棄する", () => {
-    const exhausted: AttemptOutcome = {
-      type: "responded",
-      response: new Response("e", { status: 500, statusText: "ISE" }),
-    };
-    expect(summarize(decide(exhausted, basePolicy, 1))).toEqual({
+  it("対象外状態はfetch_errorで応答を破棄する", () => {
+    const offTargetResponse = new Response("bad", { status: 400, statusText: "Bad" });
+    const offTarget: AttemptOutcome = { type: "responded", response: offTargetResponse };
+    expect(decide(offTarget, basePolicy, 0)).toEqual({
       type: "return",
-      ok: false,
-      error: { type: "fetch_error", status: 500, error: "ISE" },
-      discarded: true,
+      result: new Err({ type: "fetch_error", status: 400, error: "Bad" }),
+      discard: offTargetResponse,
     });
-    const offTarget: AttemptOutcome = {
-      type: "responded",
-      response: new Response("bad", { status: 400, statusText: "Bad" }),
-    };
-    expect(summarize(decide(offTarget, basePolicy, 0))).toEqual({
+  });
+
+  it("非冪等メソッドはfetch_errorで応答を破棄する", () => {
+    const nonIdempotentResponse = new Response("e", { status: 500, statusText: "ISE" });
+    const nonIdempotent: AttemptOutcome = { type: "responded", response: nonIdempotentResponse };
+    expect(decide(nonIdempotent, { ...basePolicy, methodRetryable: false }, 0)).toEqual({
       type: "return",
-      ok: false,
-      error: { type: "fetch_error", status: 400, error: "Bad" },
-      discarded: true,
-    });
-    const nonIdempotent: AttemptOutcome = {
-      type: "responded",
-      response: new Response("e", { status: 500, statusText: "ISE" }),
-    };
-    expect(summarize(decide(nonIdempotent, { ...basePolicy, methodRetryable: false }, 0))).toEqual({
-      type: "return",
-      ok: false,
-      error: { type: "fetch_error", status: 500, error: "ISE" },
-      discarded: true,
+      result: new Err({ type: "fetch_error", status: 500, error: "ISE" }),
+      discard: nonIdempotentResponse,
     });
   });
 
@@ -161,22 +136,15 @@ describe("decide", () => {
       aborted: false,
       abortReason: undefined,
     };
-    expect(summarize(decide(outcome, basePolicy, 0))).toEqual({
-      type: "retry",
-      ok: undefined,
-      error: undefined,
-      discarded: false,
-    });
-    expect(summarize(decide(outcome, basePolicy, 1))).toEqual({
+    expect(decide(outcome, basePolicy, 0)).toEqual({ type: "retry" });
+    expect(decide(outcome, basePolicy, 1)).toEqual({
       type: "return",
-      ok: false,
-      error: {
+      result: new Err({
         type: "network_error",
         url: "https://example.com/",
         message: "dns fail",
         cause,
-      },
-      discarded: false,
+      }),
     });
   });
 
@@ -188,12 +156,10 @@ describe("decide", () => {
       aborted: true,
       abortReason: new DOMException("fetch timeout", "TimeoutError"),
     };
-    expect(summarize(decide(outcome, basePolicy, 0)).type).toBe("retry");
-    expect(summarize(decide(outcome, { ...basePolicy, timeoutMs: 10 }, 1))).toEqual({
+    expect(decide(outcome, basePolicy, 0)).toEqual({ type: "retry" });
+    expect(decide(outcome, { ...basePolicy, timeoutMs: 10 }, 1)).toEqual({
       type: "return",
-      ok: false,
-      error: { type: "timeout_error", url: "https://example.com/", timeoutMs: 10 },
-      discarded: false,
+      result: new Err({ type: "timeout_error", url: "https://example.com/", timeoutMs: 10 }),
     });
   });
 
@@ -206,18 +172,14 @@ describe("decide", () => {
       aborted: true,
       abortReason: reason,
     };
-    expect(summarize(decide(aborted, basePolicy, 0))).toEqual({
+    expect(decide(aborted, basePolicy, 0)).toEqual({
       type: "return",
-      ok: false,
-      error: { type: "abort_error", url: "https://example.com/", reason },
-      discarded: false,
+      result: new Err({ type: "abort_error", url: "https://example.com/", reason }),
     });
     const preAborted: AttemptOutcome = { type: "preAborted", reason };
-    expect(summarize(decide(preAborted, basePolicy, 0))).toEqual({
+    expect(decide(preAborted, basePolicy, 0)).toEqual({
       type: "return",
-      ok: false,
-      error: { type: "abort_error", url: "https://example.com/", reason },
-      discarded: false,
+      result: new Err({ type: "abort_error", url: "https://example.com/", reason }),
     });
   });
 });

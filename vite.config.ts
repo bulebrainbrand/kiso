@@ -36,10 +36,20 @@ export default defineConfig({
     tasks: {
       coverage: {
         command: [
-          `git diff --name-only $(git merge-base origin/main HEAD) HEAD | node scripts/testByFile.ts && node scripts/allTest.ts`,
+          `vpr pack && git diff --name-only $(git merge-base origin/main HEAD) HEAD | node scripts/testByFile.ts && node scripts/allTest.ts`,
         ],
         cwd: ".",
         cache: false,
+      },
+      pack: {
+        command: [
+          "vp -C packages/types pack --logLevel=silent",
+          "vp -C packages/core pack --logLevel=silent",
+          "vp -C packages/prov-yukicoder pack --logLevel=silent",
+        ],
+      },
+      test: {
+        command: ["vpr pack --silent", "vp test"],
       },
     },
   },

@@ -80,7 +80,7 @@ for (const [i, file] of testFiles.entries()) {
   if (coverageResult) {
     result[target] = {
       type: "success",
-      coverage,
+      coverage: coverageResult,
       test: path.relative(process.cwd(), file),
     };
   } else {

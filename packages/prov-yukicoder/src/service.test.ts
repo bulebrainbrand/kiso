@@ -151,4 +151,34 @@ describe("YukiCoderService.fetchContest", () => {
       { name: "ok", input: "in", output: "out" },
     ]);
   });
+
+  it("Noがnullの問題は検証エラーにせず除外する", async () => {
+    const service = new YukiCoderService("yukicoder");
+    const requestedUrls: string[] = [];
+    const ctx = makeCtx((url) => {
+      requestedUrls.push(url);
+      if (url === "https://yukicoder.me/api/v1/contest/id/1") {
+        return okJson({
+          ...contestJson,
+          Problems: [
+            { ProblemId: 101, No: 1, Title: "A" },
+            { ProblemId: 999, No: null, Title: "unpublished" },
+          ],
+        });
+      }
+      if (url === "https://yukicoder.me/problems/no/1") {
+        return okHtml(problemHtml([["sample1", "1\n", "1\n"]]));
+      }
+      return errAsync({ type: "not_found", url });
+    });
+
+    const result = await service.fetchContest(ctx, "1");
+    expect(result.isOk()).toBe(true);
+    if (result.isErr()) return;
+    expect(result.value.probrems.map((p) => p.id)).toStrictEqual(["101"]);
+    expect(result.value.probrems.map((p) => p.name)).toStrictEqual(["1"]);
+    expect(requestedUrls).not.toContain(
+      "https://yukicoder.me/problems/no/null",
+    );
+  });
 });

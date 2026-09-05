@@ -12,7 +12,10 @@ import { errAsync, fromPromise, ResultAsync } from "neverthrow";
 import { parse, type HTMLElement } from "node-html-parser";
 import * as v from "valibot";
 
-import { yukicoderContestSchema } from "./schema/contest.ts";
+import {
+  yukicoderContestSchema,
+  type YukicoderContestProblem,
+} from "./schema/contest.ts";
 type YukicoderStorage = { API_KEY: string };
 type YukicoderCtx = BaseContext<YukicoderStorage>;
 const loginSchema = v.object({ API_KEY: v.string() });
@@ -53,7 +56,11 @@ export class YukiCoderService implements ContestProvider<
             issues: parsed.issues,
           } satisfies ValidationError);
         }
-        const problems = parsed.output.Problems;
+        // 番号未割当 (No: null) の問題は問題ページの URL を作れないため除外する
+        const problems = parsed.output.Problems.filter(
+          (prob): prob is YukicoderContestProblem & { No: number } =>
+            prob.No !== null,
+        );
         return ResultAsync.combine(
           problems.map((prob) => this.fetchTestcase(ctx, prob.No)),
         ).map(

@@ -2,7 +2,7 @@ import * as v from "valibot";
 
 export const yukicoderContestProblemSchema = v.object({
   ProblemId: v.pipe(v.number(), v.integer()),
-  No: v.pipe(v.number(), v.integer()),
+  No: v.nullable(v.pipe(v.number(), v.integer())),
   Title: v.string(),
 });
 

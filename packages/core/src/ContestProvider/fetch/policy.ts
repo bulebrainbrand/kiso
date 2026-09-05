@@ -21,16 +21,26 @@ export const normalizeOptions = (options?: FetchOptions) => {
   const maxRetries = Number.isFinite(rawMaxRetries)
     ? Math.max(0, Math.floor(rawMaxRetries))
     : DEFAULT_MAX_RETRIES;
-  const initialDelayMs = asValidDelay(options?.initialDelayMs) ?? DEFAULT_INITIAL_DELAY_MS;
+  const initialDelayMs =
+    asValidDelay(options?.initialDelayMs) ?? DEFAULT_INITIAL_DELAY_MS;
   const backoff = options?.backoff ?? DEFAULT_BACKOFF;
   const maxDelayMs = asValidDelay(options?.maxDelayMs);
   const retryOn = options?.retryOn ?? defaultRetryOn;
   const timeoutMs = asValidDelay(options?.timeoutMs) ?? DEFAULT_TIMEOUT_MS;
-  return { maxRetries, initialDelayMs, backoff, maxDelayMs, retryOn, timeoutMs };
+  return {
+    maxRetries,
+    initialDelayMs,
+    backoff,
+    maxDelayMs,
+    retryOn,
+    timeoutMs,
+  };
 };
 
 const asValidDelay = (value: number | undefined): number | undefined =>
-  value !== undefined && Number.isFinite(value) && value >= 0 ? value : undefined;
+  value !== undefined && Number.isFinite(value) && value >= 0
+    ? value
+    : undefined;
 
 export type RetryPolicy = {
   url: string;

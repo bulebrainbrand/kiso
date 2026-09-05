@@ -1,5 +1,6 @@
-import { Err, Ok, type Result } from "neverthrow";
 import type { FetchError, FetchOptions } from "@kiso/types";
+import { Err, Ok, type Result } from "neverthrow";
+
 import { toAbortError } from "./policy.ts";
 
 // Node の setTimeout 上限。これを超えると TimeoutOverflowWarning のうえ約1msに丸められる。
@@ -11,11 +12,17 @@ export const computeDelay = (
   backoff: NonNullable<FetchOptions["backoff"]>,
   maxDelayMs: number | undefined,
 ): number => {
-  const base = backoff === "exponential" ? initialDelayMs * 2 ** retryIndex : initialDelayMs;
+  const base =
+    backoff === "exponential"
+      ? initialDelayMs * 2 ** retryIndex
+      : initialDelayMs;
   return Math.min(base, maxDelayMs ?? MAX_TIMER_MS, MAX_TIMER_MS);
 };
 
-export const sleep = (ms: number, signal?: AbortSignal | null): Promise<void> => {
+export const sleep = (
+  ms: number,
+  signal?: AbortSignal | null,
+): Promise<void> => {
   if (signal?.aborted) return Promise.reject(signal.reason);
   if (ms <= 0) return Promise.resolve();
   return new Promise((resolve, reject) => {
@@ -45,7 +52,12 @@ export const waitForRetry = async (
 ): Promise<Result<void, FetchError>> => {
   try {
     await sleep(
-      computeDelay(attempt, config.initialDelayMs, config.backoff, config.maxDelayMs),
+      computeDelay(
+        attempt,
+        config.initialDelayMs,
+        config.backoff,
+        config.maxDelayMs,
+      ),
       userSignal,
     );
     return new Ok(undefined);

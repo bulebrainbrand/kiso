@@ -1,5 +1,5 @@
-import * as v from "valibot";
 import { languagePluginSchema } from "@kiso/types";
+import * as v from "valibot";
 
 const uniqueStringOrStringArraySchema = v.pipe(
   v.union([v.string(), v.array(v.string())]),
@@ -23,7 +23,11 @@ const langDefaultSchema = v.pipe(
   ]),
   v.transform((input) => {
     if (Array.isArray(input)) {
-      return { langs: input, extendWhenUseLangFlag: false, extendWhenUseLangSetFlag: false };
+      return {
+        langs: input,
+        extendWhenUseLangFlag: false,
+        extendWhenUseLangSetFlag: false,
+      };
     }
     return input;
   }),
@@ -70,7 +74,9 @@ export const ConfigSchema = v.pipe(
       (input) => {
         const names = input.lang.plugins.map((p) => p.name);
 
-        return input.lang.langSet.every((s) => s.langs.every((t) => names.includes(t)));
+        return input.lang.langSet.every((s) =>
+          s.langs.every((t) => names.includes(t)),
+        );
       },
       "langSet[].langs must be one of lang.plugins[].name",
     ),

@@ -1,7 +1,9 @@
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+
 import { afterEach, describe, expect, it } from "vite-plus/test";
+
 import { KISO_CONFIG_FILE_NAME } from "../constants.ts";
 import { findConfig } from "./findConfig.ts";
 
@@ -92,7 +94,10 @@ describe("findConfig", () => {
     const result = findConfig(cwd);
     expect(result.isErr()).toBe(true);
     if (result.isErr()) {
-      expect(result.error).toEqual({ type: "is_directory", path: dirCandidate });
+      expect(result.error).toEqual({
+        type: "is_directory",
+        path: dirCandidate,
+      });
     }
   });
 });

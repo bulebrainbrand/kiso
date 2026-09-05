@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vite-plus/test";
-import { computeDelay, sleep, waitForRetry, type DelayConfig } from "./delay.ts";
+
+import {
+  computeDelay,
+  sleep,
+  waitForRetry,
+  type DelayConfig,
+} from "./delay.ts";
 
 describe("computeDelay", () => {
   it("fixed は常に initialDelayMs", () => {
@@ -26,7 +32,9 @@ describe("computeDelay", () => {
   });
 
   it("Node 上限超えの maxDelayMs は Node 上限に丸める", () => {
-    expect(computeDelay(1024, 100, "exponential", Number.MAX_SAFE_INTEGER)).toBe(2 ** 31 - 1);
+    expect(
+      computeDelay(1024, 100, "exponential", Number.MAX_SAFE_INTEGER),
+    ).toBe(2 ** 31 - 1);
   });
 });
 
@@ -66,10 +74,19 @@ describe("sleep", () => {
 });
 
 describe("waitForRetry", () => {
-  const config: DelayConfig = { initialDelayMs: 0, backoff: "fixed", maxDelayMs: undefined };
+  const config: DelayConfig = {
+    initialDelayMs: 0,
+    backoff: "fixed",
+    maxDelayMs: undefined,
+  };
 
   it("待機完了で Ok を返す", async () => {
-    const result = await waitForRetry(0, config, "https://example.com/", undefined);
+    const result = await waitForRetry(
+      0,
+      config,
+      "https://example.com/",
+      undefined,
+    );
     expect(result.isOk()).toBe(true);
   });
 
@@ -79,8 +96,17 @@ describe("waitForRetry", () => {
     setTimeout(() => {
       controller.abort(reason);
     }, 10);
-    const waiting: DelayConfig = { initialDelayMs: 5000, backoff: "fixed", maxDelayMs: undefined };
-    const result = await waitForRetry(0, waiting, "https://example.com/", controller.signal);
+    const waiting: DelayConfig = {
+      initialDelayMs: 5000,
+      backoff: "fixed",
+      maxDelayMs: undefined,
+    };
+    const result = await waitForRetry(
+      0,
+      waiting,
+      "https://example.com/",
+      controller.signal,
+    );
     if (result.isErr()) {
       expect(result.error).toEqual({
         type: "abort_error",

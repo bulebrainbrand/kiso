@@ -3,7 +3,13 @@ import { cloneInput } from "./request.ts";
 export type AttemptOutcome =
   | { type: "preAborted"; reason: unknown }
   | { type: "responded"; response: Response }
-  | { type: "thrown"; error: unknown; timedOut: boolean; aborted: boolean; abortReason: unknown };
+  | {
+      type: "thrown";
+      error: unknown;
+      timedOut: boolean;
+      aborted: boolean;
+      abortReason: unknown;
+    };
 
 export const attemptOnce = async (
   input: string | URL | Request,
@@ -28,7 +34,10 @@ export const attemptOnce = async (
     }, timeoutMs);
   }
   try {
-    const response = await fetch(cloneInput(input), { ...init, signal: controller.signal });
+    const response = await fetch(cloneInput(input), {
+      ...init,
+      signal: controller.signal,
+    });
     return { type: "responded", response };
   } catch (error) {
     return {
@@ -44,7 +53,9 @@ export const attemptOnce = async (
   }
 };
 
-export const discardBody = async (response: Response | undefined): Promise<void> => {
+export const discardBody = async (
+  response: Response | undefined,
+): Promise<void> => {
   try {
     await response?.body?.cancel();
   } catch {}

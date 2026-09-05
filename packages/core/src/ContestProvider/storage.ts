@@ -1,3 +1,6 @@
+import fs from "fs";
+import path from "path";
+
 import type {
   FileReadError,
   FileWriteError,
@@ -8,10 +11,8 @@ import type {
   StorageType,
   UnexpectedError,
 } from "@kiso/types";
-import * as v from "valibot";
-import fs from "fs";
 import { Err, Ok, type Result } from "neverthrow";
-import path from "path";
+import * as v from "valibot";
 export class Storage<S extends StorageType> implements StorageContext<S> {
   constructor(
     private readonly name: string,
@@ -21,7 +22,9 @@ export class Storage<S extends StorageType> implements StorageContext<S> {
     if (fs.existsSync(storagePath)) {
       if (fs.statSync(storagePath).isFile()) {
       } else {
-        throw new TypeError(`${storagePath} is not file. can't parse directory`);
+        throw new TypeError(
+          `${storagePath} is not file. can't parse directory`,
+        );
       }
     }
   }
@@ -44,7 +47,11 @@ export class Storage<S extends StorageType> implements StorageContext<S> {
     keyValue: S[K],
   ): Result<
     void,
-    FileWriteError | FileReadError | JSONParseError | JSONStringifyError | UnexpectedError
+    | FileWriteError
+    | FileReadError
+    | JSONParseError
+    | JSONStringifyError
+    | UnexpectedError
   > {
     const result = this.readJSON();
     let obj: Partial<Record<string, JSONPrimitive>>;
@@ -65,7 +72,11 @@ export class Storage<S extends StorageType> implements StorageContext<S> {
     keyName: K,
   ): Result<
     void,
-    FileWriteError | FileReadError | JSONParseError | JSONStringifyError | UnexpectedError
+    | FileWriteError
+    | FileReadError
+    | JSONParseError
+    | JSONStringifyError
+    | UnexpectedError
   > {
     const result = this.readJSON();
     if (result.isErr()) {
@@ -96,11 +107,18 @@ export class Storage<S extends StorageType> implements StorageContext<S> {
           if (error.code === "ENOENT") {
             return new Ok(undefined);
           }
-          return new Err({ type: "write_error", message: error.message, code: error.code });
+          return new Err({
+            type: "write_error",
+            message: error.message,
+            code: error.code,
+          });
         }
         return new Err({ type: "unexpected_error", message: String(error) });
       }
-      return new Err({ type: "unexpected_error", message: JSON.stringify(error) });
+      return new Err({
+        type: "unexpected_error",
+        message: JSON.stringify(error),
+      });
     }
   }
 
@@ -125,17 +143,26 @@ export class Storage<S extends StorageType> implements StorageContext<S> {
       if (error instanceof Error) {
         if ("code" in error && typeof error.code === "string") {
           // fs read error (ENOENT, EACCES, EISDIR, ...)
-          return new Err({ type: "read_error", message: error.message, code: error.code });
+          return new Err({
+            type: "read_error",
+            message: error.message,
+            code: error.code,
+          });
         }
         return new Err({ type: "unexpected_error", message: String(error) });
       }
-      return new Err({ type: "unexpected_error", message: JSON.stringify(error) });
+      return new Err({
+        type: "unexpected_error",
+        message: JSON.stringify(error),
+      });
     }
   }
   private writeJSON(
     obj: Partial<Record<string, JSONPrimitive>>,
   ): Result<void, FileWriteError | JSONStringifyError | UnexpectedError> {
-    return this.stringifyJSON(obj).andThen((content) => this.writeFile(content));
+    return this.stringifyJSON(obj).andThen((content) =>
+      this.writeFile(content),
+    );
   }
   private stringifyJSON(
     obj: Partial<Record<string, JSONPrimitive>>,
@@ -146,10 +173,15 @@ export class Storage<S extends StorageType> implements StorageContext<S> {
       if (error instanceof Error) {
         return new Err({ type: "stringify_error", message: error.message });
       }
-      return new Err({ type: "unexpected_error", message: JSON.stringify(error) });
+      return new Err({
+        type: "unexpected_error",
+        message: JSON.stringify(error),
+      });
     }
   }
-  private writeFile(content: string): Result<void, FileWriteError | UnexpectedError> {
+  private writeFile(
+    content: string,
+  ): Result<void, FileWriteError | UnexpectedError> {
     try {
       fs.mkdirSync(this.dir, { recursive: true });
       fs.writeFileSync(this.createStorageFilePath(), content);
@@ -157,27 +189,42 @@ export class Storage<S extends StorageType> implements StorageContext<S> {
     } catch (error) {
       if (error instanceof Error) {
         if ("code" in error && typeof error.code === "string") {
-          return new Err({ type: "write_error", message: error.message, code: error.code });
+          return new Err({
+            type: "write_error",
+            message: error.message,
+            code: error.code,
+          });
         }
         return new Err({ type: "unexpected_error", message: String(error) });
       }
-      return new Err({ type: "unexpected_error", message: JSON.stringify(error) });
+      return new Err({
+        type: "unexpected_error",
+        message: JSON.stringify(error),
+      });
     }
   }
-  private parseJSON(str: string): Result<unknown, JSONParseError | UnexpectedError> {
+  private parseJSON(
+    str: string,
+  ): Result<unknown, JSONParseError | UnexpectedError> {
     try {
       return JSON.parse(str);
     } catch (error) {
       if (error instanceof SyntaxError) {
         return new Err({ type: "parse_error", message: String(error) });
       }
-      return new Err({ type: "unexpected_error", message: JSON.stringify(error) });
+      return new Err({
+        type: "unexpected_error",
+        message: JSON.stringify(error),
+      });
     }
   }
   private parseUnknownJSON(
     obj: unknown,
   ): Result<Partial<Record<string, JSONPrimitive>>, JSONParseError> {
-    const schema = v.record(v.string(), v.union([v.string(), v.number(), v.boolean(), v.null()]));
+    const schema = v.record(
+      v.string(),
+      v.union([v.string(), v.number(), v.boolean(), v.null()]),
+    );
     const result = v.safeParse(schema, obj);
     if (result.success) {
       return new Ok(result.output);

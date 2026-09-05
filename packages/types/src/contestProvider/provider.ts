@@ -1,9 +1,10 @@
 import type { ResultAsync } from "neverthrow";
-import type { JSONPrimitive, StorageError, StorageType } from "./storage.ts";
-import type { FetchError } from "./fetch.ts";
+
 import type { Contest } from "../contest.ts";
 import type { BaseContext } from "./context.ts";
+import type { FetchError } from "./fetch.ts";
 import type { LoginSchema } from "./login.ts";
+import type { JSONPrimitive, StorageError, StorageType } from "./storage.ts";
 
 export type AuthError = { type: "auth_error"; reason: "invalid_credentials" };
 
@@ -14,7 +15,10 @@ export type ContestProvider<
   LO = LA,
 > = {
   readonly name: string;
-  fetchContest(ctx: BaseContext<S>, contestId: string): ResultAsync<Contest, ProviderError>;
+  fetchContest(
+    ctx: BaseContext<S>,
+    contestId: string,
+  ): ResultAsync<Contest, ProviderError>;
   loginSchema: LoginSchema<LA, LO>;
   login(ctx: BaseContext<S>, credentials: LO): ResultAsync<void, ProviderError>;
   whoami(ctx: BaseContext<S>): ResultAsync<string, ProviderError>;

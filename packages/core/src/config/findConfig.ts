@@ -1,7 +1,9 @@
+import { existsSync, statSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
+
 import { err, ok } from "neverthrow";
 import type { Result } from "neverthrow";
-import { dirname, join, resolve } from "node:path";
-import { existsSync, statSync } from "node:fs";
+
 import { KISO_CONFIG_FILE_NAME } from "../constants.ts";
 export type FindConfigNotFoundError = {
   type: "not_found";

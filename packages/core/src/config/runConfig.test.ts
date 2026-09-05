@@ -1,7 +1,9 @@
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+
 import { afterEach, describe, expect, it } from "vite-plus/test";
+
 import { KISO_CONFIG_FILE_NAME } from "../constants.ts";
 import { runConfig } from "./runConfig.ts";
 
@@ -28,7 +30,10 @@ afterEach(() => {
 
 describe("runConfig", () => {
   it("default exportのオブジェクトを読み込める", async () => {
-    const path = writeConfig(makeTempRoot(), 'export default { foo: "bar" };\n');
+    const path = writeConfig(
+      makeTempRoot(),
+      'export default { foo: "bar" };\n',
+    );
     const result = await runConfig(path);
     expect(result.isOk()).toBe(true);
     if (result.isOk()) {
@@ -37,7 +42,10 @@ describe("runConfig", () => {
   });
 
   it("TypeScript構文を含むconfigを読み込める", async () => {
-    const path = writeConfig(makeTempRoot(), "const x: number = 1;\nexport default { x };\n");
+    const path = writeConfig(
+      makeTempRoot(),
+      "const x: number = 1;\nexport default { x };\n",
+    );
     const result = await runConfig(path);
     expect(result.isOk()).toBe(true);
     if (result.isOk()) {

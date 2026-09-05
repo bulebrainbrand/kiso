@@ -1,17 +1,32 @@
-import { Err, Ok, type Result } from "neverthrow";
 import type { FetchError } from "@kiso/types";
+import { Err, Ok, type Result } from "neverthrow";
+
 import type { AttemptOutcome } from "./attempt.ts";
 import { isRetryableStatus, toAbortError, type RetryPolicy } from "./policy.ts";
 
 export type Decision =
   | { type: "retry"; discard?: Response }
-  | { type: "return"; result: Result<Response, FetchError>; discard?: Response };
+  | {
+      type: "return";
+      result: Result<Response, FetchError>;
+      discard?: Response;
+    };
 
-export const decide = (outcome: AttemptOutcome, policy: RetryPolicy, attempt: number): Decision => {
-  const retryable = attempt < policy.maxRetries && policy.methodRetryable && policy.bodyRetryable;
+export const decide = (
+  outcome: AttemptOutcome,
+  policy: RetryPolicy,
+  attempt: number,
+): Decision => {
+  const retryable =
+    attempt < policy.maxRetries &&
+    policy.methodRetryable &&
+    policy.bodyRetryable;
   switch (outcome.type) {
     case "preAborted":
-      return { type: "return", result: new Err(toAbortError(policy.url, outcome.reason)) };
+      return {
+        type: "return",
+        result: new Err(toAbortError(policy.url, outcome.reason)),
+      };
     case "thrown": {
       if (outcome.timedOut) {
         return retryable
@@ -26,10 +41,15 @@ export const decide = (outcome: AttemptOutcome, policy: RetryPolicy, attempt: nu
             };
       }
       if (outcome.aborted) {
-        return { type: "return", result: new Err(toAbortError(policy.url, outcome.abortReason)) };
+        return {
+          type: "return",
+          result: new Err(toAbortError(policy.url, outcome.abortReason)),
+        };
       }
       const message =
-        outcome.error instanceof Error ? outcome.error.message : String(outcome.error);
+        outcome.error instanceof Error
+          ? outcome.error.message
+          : String(outcome.error);
       return retryable
         ? { type: "retry" }
         : {

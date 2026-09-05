@@ -1,4 +1,5 @@
 import { type ResultAsync, fromPromise } from "neverthrow";
+
 import { createConfigJiti } from "./createJiti.ts";
 
 let jiti = createConfigJiti();

@@ -1,6 +1,11 @@
 import { readFileSync } from "fs";
 
-type Coverage = { total: number; covered: number; skipped: number; pct: number };
+type Coverage = {
+  total: number;
+  covered: number;
+  skipped: number;
+  pct: number;
+};
 
 type TestResult = Record<
   string,
@@ -19,7 +24,10 @@ type TestResult = Record<
   | { type: "not_found"; expect: string }
 >;
 
-export function coverageToMarkdown(coverage: TestResult, headSha?: string): string {
+export function coverageToMarkdown(
+  coverage: TestResult,
+  headSha?: string,
+): string {
   void coverage;
   void headSha;
   return "gooooooooo";

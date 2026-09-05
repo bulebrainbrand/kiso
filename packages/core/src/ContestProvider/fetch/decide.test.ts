@@ -1,7 +1,8 @@
-import { describe, expect, it } from "vite-plus/test";
 import { Err, Ok } from "neverthrow";
-import { decide } from "./decide.ts";
+import { describe, expect, it } from "vite-plus/test";
+
 import type { AttemptOutcome } from "./attempt.ts";
+import { decide } from "./decide.ts";
 import type { RetryPolicy } from "./policy.ts";
 
 describe("decide", () => {
@@ -17,7 +18,10 @@ describe("decide", () => {
   it("ok応答はそのまま返す", () => {
     const response = new Response("ok");
     const outcome: AttemptOutcome = { type: "responded", response };
-    expect(decide(outcome, basePolicy, 0)).toEqual({ type: "return", result: new Ok(response) });
+    expect(decide(outcome, basePolicy, 0)).toEqual({
+      type: "return",
+      result: new Ok(response),
+    });
   });
 
   it("404はnot_foundで応答を破棄する", () => {
@@ -33,12 +37,21 @@ describe("decide", () => {
   it("再試行可能な状態はretryし応答を破棄する", () => {
     const response = new Response("e", { status: 500 });
     const outcome: AttemptOutcome = { type: "responded", response };
-    expect(decide(outcome, basePolicy, 0)).toEqual({ type: "retry", discard: response });
+    expect(decide(outcome, basePolicy, 0)).toEqual({
+      type: "retry",
+      discard: response,
+    });
   });
 
   it("回数超過はfetch_errorで応答を破棄する", () => {
-    const exhaustedResponse = new Response("e", { status: 500, statusText: "ISE" });
-    const exhausted: AttemptOutcome = { type: "responded", response: exhaustedResponse };
+    const exhaustedResponse = new Response("e", {
+      status: 500,
+      statusText: "ISE",
+    });
+    const exhausted: AttemptOutcome = {
+      type: "responded",
+      response: exhaustedResponse,
+    };
     expect(decide(exhausted, basePolicy, 1)).toEqual({
       type: "return",
       result: new Err({ type: "fetch_error", status: 500, error: "ISE" }),
@@ -47,8 +60,14 @@ describe("decide", () => {
   });
 
   it("対象外状態はfetch_errorで応答を破棄する", () => {
-    const offTargetResponse = new Response("bad", { status: 400, statusText: "Bad" });
-    const offTarget: AttemptOutcome = { type: "responded", response: offTargetResponse };
+    const offTargetResponse = new Response("bad", {
+      status: 400,
+      statusText: "Bad",
+    });
+    const offTarget: AttemptOutcome = {
+      type: "responded",
+      response: offTargetResponse,
+    };
     expect(decide(offTarget, basePolicy, 0)).toEqual({
       type: "return",
       result: new Err({ type: "fetch_error", status: 400, error: "Bad" }),
@@ -57,9 +76,17 @@ describe("decide", () => {
   });
 
   it("非冪等メソッドはfetch_errorで応答を破棄する", () => {
-    const nonIdempotentResponse = new Response("e", { status: 500, statusText: "ISE" });
-    const nonIdempotent: AttemptOutcome = { type: "responded", response: nonIdempotentResponse };
-    expect(decide(nonIdempotent, { ...basePolicy, methodRetryable: false }, 0)).toEqual({
+    const nonIdempotentResponse = new Response("e", {
+      status: 500,
+      statusText: "ISE",
+    });
+    const nonIdempotent: AttemptOutcome = {
+      type: "responded",
+      response: nonIdempotentResponse,
+    };
+    expect(
+      decide(nonIdempotent, { ...basePolicy, methodRetryable: false }, 0),
+    ).toEqual({
       type: "return",
       result: new Err({ type: "fetch_error", status: 500, error: "ISE" }),
       discard: nonIdempotentResponse,
@@ -98,7 +125,11 @@ describe("decide", () => {
     expect(decide(outcome, basePolicy, 0)).toEqual({ type: "retry" });
     expect(decide(outcome, { ...basePolicy, timeoutMs: 10 }, 1)).toEqual({
       type: "return",
-      result: new Err({ type: "timeout_error", url: "https://example.com/", timeoutMs: 10 }),
+      result: new Err({
+        type: "timeout_error",
+        url: "https://example.com/",
+        timeoutMs: 10,
+      }),
     });
   });
 
@@ -112,7 +143,11 @@ describe("decide", () => {
     };
     expect(decide(outcome, basePolicy, 1)).toEqual({
       type: "return",
-      result: new Err({ type: "timeout_error", url: "https://example.com/", timeoutMs: 0 }),
+      result: new Err({
+        type: "timeout_error",
+        url: "https://example.com/",
+        timeoutMs: 0,
+      }),
     });
   });
 
@@ -146,23 +181,33 @@ describe("decide", () => {
     };
     expect(decide(aborted, basePolicy, 0)).toEqual({
       type: "return",
-      result: new Err({ type: "abort_error", url: "https://example.com/", reason }),
+      result: new Err({
+        type: "abort_error",
+        url: "https://example.com/",
+        reason,
+      }),
     });
     const preAborted: AttemptOutcome = { type: "preAborted", reason };
     expect(decide(preAborted, basePolicy, 0)).toEqual({
       type: "return",
-      result: new Err({ type: "abort_error", url: "https://example.com/", reason }),
+      result: new Err({
+        type: "abort_error",
+        url: "https://example.com/",
+        reason,
+      }),
     });
   });
 
   it("非再送ボディはステータス失敗でもリトライしない", () => {
     const response = new Response("e", { status: 500, statusText: "ISE" });
     const outcome: AttemptOutcome = { type: "responded", response };
-    expect(decide(outcome, { ...basePolicy, bodyRetryable: false }, 0)).toEqual({
-      type: "return",
-      result: new Err({ type: "fetch_error", status: 500, error: "ISE" }),
-      discard: response,
-    });
+    expect(decide(outcome, { ...basePolicy, bodyRetryable: false }, 0)).toEqual(
+      {
+        type: "return",
+        result: new Err({ type: "fetch_error", status: 500, error: "ISE" }),
+        discard: response,
+      },
+    );
   });
 
   it("非再送ボディはネットワーク失敗でもリトライしない", () => {
@@ -174,14 +219,16 @@ describe("decide", () => {
       aborted: false,
       abortReason: undefined,
     };
-    expect(decide(outcome, { ...basePolicy, bodyRetryable: false }, 0)).toEqual({
-      type: "return",
-      result: new Err({
-        type: "network_error",
-        url: "https://example.com/",
-        message: "fetch failed",
-        cause,
-      }),
-    });
+    expect(decide(outcome, { ...basePolicy, bodyRetryable: false }, 0)).toEqual(
+      {
+        type: "return",
+        result: new Err({
+          type: "network_error",
+          url: "https://example.com/",
+          message: "fetch failed",
+          cause,
+        }),
+      },
+    );
   });
 });

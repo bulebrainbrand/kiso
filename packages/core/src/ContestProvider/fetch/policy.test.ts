@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vite-plus/test";
-import { defaultRetryOn, isRetryableStatus, normalizeOptions, toAbortError } from "./policy.ts";
+
+import {
+  defaultRetryOn,
+  isRetryableStatus,
+  normalizeOptions,
+  toAbortError,
+} from "./policy.ts";
 
 describe("defaultRetryOn", () => {
   it("429 と 5xx をリトライ対象にする", () => {
@@ -72,7 +78,9 @@ describe("normalizeOptions", () => {
 
   it("initialDelayMs の無効値はデフォルトの 100 になる", () => {
     expect(normalizeOptions({ initialDelayMs: -5 }).initialDelayMs).toBe(100);
-    expect(normalizeOptions({ initialDelayMs: Infinity }).initialDelayMs).toBe(100);
+    expect(normalizeOptions({ initialDelayMs: Infinity }).initialDelayMs).toBe(
+      100,
+    );
     expect(normalizeOptions({ initialDelayMs: NaN }).initialDelayMs).toBe(100);
   });
 
@@ -83,7 +91,9 @@ describe("normalizeOptions", () => {
   });
 
   it("maxDelayMs の無効値は undefined になる", () => {
-    expect(normalizeOptions({ maxDelayMs: Infinity }).maxDelayMs).toBeUndefined();
+    expect(
+      normalizeOptions({ maxDelayMs: Infinity }).maxDelayMs,
+    ).toBeUndefined();
     expect(normalizeOptions({ maxDelayMs: NaN }).maxDelayMs).toBeUndefined();
     expect(normalizeOptions({ maxDelayMs: -1 }).maxDelayMs).toBeUndefined();
   });

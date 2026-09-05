@@ -1,14 +1,26 @@
-import { Err, ResultAsync, type Result } from "neverthrow";
 import type { FetchError, FetchFn } from "@kiso/types";
-import { isBodyRetryable, isMethodRetryable, resolveUrl, resolveUserSignal } from "./request.ts";
-import { normalizeOptions, type RetryPolicy } from "./policy.ts";
+import { Err, ResultAsync, type Result } from "neverthrow";
+
 import { attemptOnce, discardBody } from "./attempt.ts";
 import { decide } from "./decide.ts";
 import { waitForRetry } from "./delay.ts";
+import { normalizeOptions, type RetryPolicy } from "./policy.ts";
+import {
+  isBodyRetryable,
+  isMethodRetryable,
+  resolveUrl,
+  resolveUserSignal,
+} from "./request.ts";
 
 export const kisoFetch: FetchFn = (input, init, options) => {
-  const { maxRetries, initialDelayMs, backoff, maxDelayMs, retryOn, timeoutMs } =
-    normalizeOptions(options);
+  const {
+    maxRetries,
+    initialDelayMs,
+    backoff,
+    maxDelayMs,
+    retryOn,
+    timeoutMs,
+  } = normalizeOptions(options);
   const url = resolveUrl(input);
   const userSignal = resolveUserSignal(input, init);
   const methodRetryable = isMethodRetryable(input, init);

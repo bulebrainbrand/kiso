@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
+
 import { attemptOnce, discardBody } from "./attempt.ts";
 
 afterEach(() => {
@@ -29,7 +30,12 @@ describe("attemptOnce", () => {
     const response = okResponse();
     const mock = vi.fn(async () => response);
     vi.stubGlobal("fetch", mock);
-    const outcome = await attemptOnce("https://example.com/", undefined, undefined, undefined);
+    const outcome = await attemptOnce(
+      "https://example.com/",
+      undefined,
+      undefined,
+      undefined,
+    );
     expect(outcome).toEqual({ type: "responded", response });
   });
 
@@ -39,7 +45,12 @@ describe("attemptOnce", () => {
       throw cause;
     });
     vi.stubGlobal("fetch", mock);
-    const outcome = await attemptOnce("https://example.com/", undefined, undefined, undefined);
+    const outcome = await attemptOnce(
+      "https://example.com/",
+      undefined,
+      undefined,
+      undefined,
+    );
     expect(outcome.type).toBe("thrown");
     if (outcome.type === "thrown") {
       expect(outcome.error).toBe(cause);
@@ -60,7 +71,12 @@ describe("attemptOnce", () => {
         }),
     );
     vi.stubGlobal("fetch", mock);
-    const outcome = await attemptOnce("https://example.com/slow", undefined, undefined, 10);
+    const outcome = await attemptOnce(
+      "https://example.com/slow",
+      undefined,
+      undefined,
+      10,
+    );
     expect(outcome.type).toBe("thrown");
     if (outcome.type === "thrown") {
       expect(outcome.timedOut).toBe(true);
@@ -103,7 +119,12 @@ describe("attemptOnce", () => {
     const response = okResponse();
     const mock = vi.fn(async () => response);
     vi.stubGlobal("fetch", mock);
-    const outcome = await attemptOnce("https://example.com/", undefined, null, undefined);
+    const outcome = await attemptOnce(
+      "https://example.com/",
+      undefined,
+      null,
+      undefined,
+    );
     expect(outcome).toEqual({ type: "responded", response });
   });
 });

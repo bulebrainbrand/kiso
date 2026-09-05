@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
+
 import { kisoFetch } from "./index.ts";
 
 afterEach(() => {
@@ -26,7 +27,10 @@ describe("kisoFetch", () => {
     expect(mock).toHaveBeenCalledTimes(1);
     expect(result.isErr()).toBe(true);
     if (result.isErr()) {
-      expect(result.error).toEqual({ type: "not_found", url: "https://example.com/missing" });
+      expect(result.error).toEqual({
+        type: "not_found",
+        url: "https://example.com/missing",
+      });
     }
   });
 
@@ -45,7 +49,9 @@ describe("kisoFetch", () => {
   });
 
   it("回数超過で fetch_error になる", async () => {
-    const mock = vi.fn(async () => new Response("e", { status: 500, statusText: "ISE" }));
+    const mock = vi.fn(
+      async () => new Response("e", { status: 500, statusText: "ISE" }),
+    );
     vi.stubGlobal("fetch", mock);
     const result = await kisoFetch("https://example.com/", undefined, {
       maxRetries: 1,
@@ -54,12 +60,18 @@ describe("kisoFetch", () => {
     expect(mock).toHaveBeenCalledTimes(2);
     expect(result.isErr()).toBe(true);
     if (result.isErr()) {
-      expect(result.error).toEqual({ type: "fetch_error", status: 500, error: "ISE" });
+      expect(result.error).toEqual({
+        type: "fetch_error",
+        status: 500,
+        error: "ISE",
+      });
     }
   });
 
   it("リトライ対象外の 4xx は即 fetch_error", async () => {
-    const mock = vi.fn(async () => new Response("bad", { status: 400, statusText: "Bad" }));
+    const mock = vi.fn(
+      async () => new Response("bad", { status: 400, statusText: "Bad" }),
+    );
     vi.stubGlobal("fetch", mock);
     const result = await kisoFetch("https://example.com/", undefined, {
       maxRetries: 2,
@@ -67,7 +79,11 @@ describe("kisoFetch", () => {
     });
     expect(mock).toHaveBeenCalledTimes(1);
     if (result.isErr()) {
-      expect(result.error).toEqual({ type: "fetch_error", status: 400, error: "Bad" });
+      expect(result.error).toEqual({
+        type: "fetch_error",
+        status: 400,
+        error: "Bad",
+      });
     } else {
       expect.unreachable();
     }
@@ -155,7 +171,9 @@ describe("kisoFetch", () => {
     vi.stubGlobal("fetch", mock);
     const controller = new AbortController();
     controller.abort(new Error("user abort"));
-    const result = await kisoFetch("https://example.com/", { signal: controller.signal });
+    const result = await kisoFetch("https://example.com/", {
+      signal: controller.signal,
+    });
     expect(mock).not.toHaveBeenCalled();
     if (result.isErr()) {
       expect(result.error.type).toBe("abort_error");
@@ -165,7 +183,9 @@ describe("kisoFetch", () => {
   });
 
   it("maxRetries: Infinity は有限limitに倒して無限ループしない", async () => {
-    const mock = vi.fn(async () => new Response("e", { status: 500, statusText: "ISE" }));
+    const mock = vi.fn(
+      async () => new Response("e", { status: 500, statusText: "ISE" }),
+    );
     vi.stubGlobal("fetch", mock);
     const result = await kisoFetch("https://example.com/", undefined, {
       maxRetries: Infinity,
@@ -173,7 +193,11 @@ describe("kisoFetch", () => {
     });
     expect(mock).toHaveBeenCalledTimes(1);
     if (result.isErr()) {
-      expect(result.error).toEqual({ type: "fetch_error", status: 500, error: "ISE" });
+      expect(result.error).toEqual({
+        type: "fetch_error",
+        status: 500,
+        error: "ISE",
+      });
     } else {
       expect.unreachable();
     }
@@ -200,7 +224,11 @@ describe("kisoFetch", () => {
     expect(mock).toHaveBeenCalledTimes(1);
     expect(elapsedMs).toBeLessThan(1000);
     if (result.isErr()) {
-      expect(result.error).toEqual({ type: "abort_error", url: "https://example.com/", reason });
+      expect(result.error).toEqual({
+        type: "abort_error",
+        url: "https://example.com/",
+        reason,
+      });
     } else {
       expect.unreachable();
     }
@@ -242,7 +270,9 @@ describe("kisoFetch", () => {
   });
 
   it("POST はステータス失敗でもリトライしない", async () => {
-    const mock = vi.fn(async () => new Response("e", { status: 500, statusText: "ISE" }));
+    const mock = vi.fn(
+      async () => new Response("e", { status: 500, statusText: "ISE" }),
+    );
     vi.stubGlobal("fetch", mock);
     const result = await kisoFetch(
       "https://example.com/",
@@ -251,7 +281,11 @@ describe("kisoFetch", () => {
     );
     expect(mock).toHaveBeenCalledTimes(1);
     if (result.isErr()) {
-      expect(result.error).toEqual({ type: "fetch_error", status: 500, error: "ISE" });
+      expect(result.error).toEqual({
+        type: "fetch_error",
+        status: 500,
+        error: "ISE",
+      });
     } else {
       expect.unreachable();
     }
@@ -345,14 +379,22 @@ describe("kisoFetch", () => {
   });
 
   it("Request ボディは試行ごとに複製されリトライできる", async () => {
-    const request = new Request("https://example.com/", { method: "PUT", body: "hello" });
+    const request = new Request("https://example.com/", {
+      method: "PUT",
+      body: "hello",
+    });
     const seen: string[] = [];
     const mock = vi.fn(async (input: unknown) => {
       seen.push(await (input as Request).text());
-      return seen.length === 1 ? new Response("e", { status: 500 }) : okResponse();
+      return seen.length === 1
+        ? new Response("e", { status: 500 })
+        : okResponse();
     });
     vi.stubGlobal("fetch", mock);
-    const result = await kisoFetch(request, undefined, { maxRetries: 1, initialDelayMs: 0 });
+    const result = await kisoFetch(request, undefined, {
+      maxRetries: 1,
+      initialDelayMs: 0,
+    });
     expect(mock).toHaveBeenCalledTimes(2);
     expect(result.isOk()).toBe(true);
     expect(seen).toEqual(["hello", "hello"]);
@@ -365,7 +407,9 @@ describe("kisoFetch", () => {
         controller.close();
       },
     });
-    const mock = vi.fn(async () => new Response("e", { status: 500, statusText: "ISE" }));
+    const mock = vi.fn(
+      async () => new Response("e", { status: 500, statusText: "ISE" }),
+    );
     vi.stubGlobal("fetch", mock);
     const result = await kisoFetch(
       "https://example.com/",
@@ -374,7 +418,11 @@ describe("kisoFetch", () => {
     );
     expect(mock).toHaveBeenCalledTimes(1);
     if (result.isErr()) {
-      expect(result.error).toEqual({ type: "fetch_error", status: 500, error: "ISE" });
+      expect(result.error).toEqual({
+        type: "fetch_error",
+        status: 500,
+        error: "ISE",
+      });
     } else {
       expect.unreachable();
     }

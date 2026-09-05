@@ -1,5 +1,15 @@
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
-import { computeDelay, isRetryableStatus, kisoFetch, resolveMethod, resolveUrl } from "./fetch.ts";
+import {
+  computeDelay,
+  decide,
+  isRetryableStatus,
+  kisoFetch,
+  resolveMethod,
+  resolveUrl,
+  type AttemptOutcome,
+  type Decision,
+  type RetryPolicy,
+} from "./fetch.ts";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -53,6 +63,162 @@ describe("resolveMethod", () => {
       resolveMethod(new Request("https://example.com/", { method: "POST" }), { method: "PUT" }),
     ).toBe("PUT");
     expect(resolveMethod(new Request("https://example.com/", { method: "PATCH" }))).toBe("PATCH");
+  });
+});
+
+describe("decide", () => {
+  const basePolicy: RetryPolicy = {
+    url: "https://example.com/",
+    maxRetries: 1,
+    retryOn: [500],
+    methodRetryable: true,
+    timeoutMs: undefined,
+  };
+
+  const summarize = (decision: Decision) => ({
+    type: decision.type,
+    ok: decision.type === "return" ? decision.result.isOk() : undefined,
+    error:
+      decision.type === "return" && decision.result.isErr() ? decision.result.error : undefined,
+    discarded: decision.discard !== undefined,
+  });
+
+  it("ok応答はそのまま返す", () => {
+    const outcome: AttemptOutcome = { type: "responded", response: new Response("ok") };
+    expect(summarize(decide(outcome, basePolicy, 0))).toEqual({
+      type: "return",
+      ok: true,
+      error: undefined,
+      discarded: false,
+    });
+  });
+
+  it("404はnot_foundで応答を破棄する", () => {
+    const outcome: AttemptOutcome = {
+      type: "responded",
+      response: new Response("no", { status: 404 }),
+    };
+    expect(summarize(decide(outcome, basePolicy, 0))).toEqual({
+      type: "return",
+      ok: false,
+      error: { type: "not_found", url: "https://example.com/" },
+      discarded: true,
+    });
+  });
+
+  it("再試行可能な状態はretryし応答を破棄する", () => {
+    const outcome: AttemptOutcome = {
+      type: "responded",
+      response: new Response("e", { status: 500 }),
+    };
+    expect(summarize(decide(outcome, basePolicy, 0))).toEqual({
+      type: "retry",
+      ok: undefined,
+      error: undefined,
+      discarded: true,
+    });
+  });
+
+  it("回数超過・対象外状態・非冪等メソッドはfetch_errorで応答を破棄する", () => {
+    const exhausted: AttemptOutcome = {
+      type: "responded",
+      response: new Response("e", { status: 500, statusText: "ISE" }),
+    };
+    expect(summarize(decide(exhausted, basePolicy, 1))).toEqual({
+      type: "return",
+      ok: false,
+      error: { type: "fetch_error", status: 500, error: "ISE" },
+      discarded: true,
+    });
+    const offTarget: AttemptOutcome = {
+      type: "responded",
+      response: new Response("bad", { status: 400, statusText: "Bad" }),
+    };
+    expect(summarize(decide(offTarget, basePolicy, 0))).toEqual({
+      type: "return",
+      ok: false,
+      error: { type: "fetch_error", status: 400, error: "Bad" },
+      discarded: true,
+    });
+    const nonIdempotent: AttemptOutcome = {
+      type: "responded",
+      response: new Response("e", { status: 500, statusText: "ISE" }),
+    };
+    expect(summarize(decide(nonIdempotent, { ...basePolicy, methodRetryable: false }, 0))).toEqual({
+      type: "return",
+      ok: false,
+      error: { type: "fetch_error", status: 500, error: "ISE" },
+      discarded: true,
+    });
+  });
+
+  it("ネットワーク失敗は回数内ならretry、超過でnetwork_error", () => {
+    const cause = new TypeError("dns fail");
+    const outcome: AttemptOutcome = {
+      type: "thrown",
+      error: cause,
+      timedOut: false,
+      aborted: false,
+      abortReason: undefined,
+    };
+    expect(summarize(decide(outcome, basePolicy, 0))).toEqual({
+      type: "retry",
+      ok: undefined,
+      error: undefined,
+      discarded: false,
+    });
+    expect(summarize(decide(outcome, basePolicy, 1))).toEqual({
+      type: "return",
+      ok: false,
+      error: {
+        type: "network_error",
+        url: "https://example.com/",
+        message: "dns fail",
+        cause,
+      },
+      discarded: false,
+    });
+  });
+
+  it("タイムアウトは回数内ならretry、超過でtimeout_error", () => {
+    const outcome: AttemptOutcome = {
+      type: "thrown",
+      error: new DOMException("fetch timeout", "TimeoutError"),
+      timedOut: true,
+      aborted: true,
+      abortReason: new DOMException("fetch timeout", "TimeoutError"),
+    };
+    expect(summarize(decide(outcome, basePolicy, 0)).type).toBe("retry");
+    expect(summarize(decide(outcome, { ...basePolicy, timeoutMs: 10 }, 1))).toEqual({
+      type: "return",
+      ok: false,
+      error: { type: "timeout_error", url: "https://example.com/", timeoutMs: 10 },
+      discarded: false,
+    });
+  });
+
+  it("abortは即abort_error", () => {
+    const reason = new Error("user abort");
+    const aborted: AttemptOutcome = {
+      type: "thrown",
+      error: reason,
+      timedOut: false,
+      aborted: true,
+      abortReason: reason,
+    };
+    expect(summarize(decide(aborted, basePolicy, 0))).toEqual({
+      type: "return",
+      ok: false,
+      error: { type: "abort_error", url: "https://example.com/", reason },
+      discarded: false,
+    });
+    const preAborted: AttemptOutcome = { type: "preAborted", reason };
+    expect(summarize(decide(preAborted, basePolicy, 0))).toEqual({
+      type: "return",
+      ok: false,
+      error: { type: "abort_error", url: "https://example.com/", reason },
+      discarded: false,
+    });
   });
 });
 
@@ -376,5 +542,19 @@ describe("kisoFetch", () => {
     });
     expect(mock).toHaveBeenCalledTimes(2);
     expect(result.isOk()).toBe(true);
+  });
+
+  it("404 終端時も応答の body をキャンセルする", async () => {
+    let cancelled = false;
+    const stream = new ReadableStream({
+      cancel() {
+        cancelled = true;
+      },
+    });
+    const mock = vi.fn(async () => new Response(stream, { status: 404 }));
+    vi.stubGlobal("fetch", mock);
+    const result = await kisoFetch("https://example.com/gone");
+    expect(result.isErr()).toBe(true);
+    expect(cancelled).toBe(true);
   });
 });

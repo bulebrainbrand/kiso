@@ -1,6 +1,5 @@
 import { Err, Ok, ResultAsync, type Result } from "neverthrow";
 import type { FetchError, FetchFn, FetchOptions } from "@kiso/types";
-
 const DEFAULT_MAX_RETRIES = 0;
 const DEFAULT_INITIAL_DELAY_MS = 100;
 const DEFAULT_BACKOFF = "exponential" satisfies FetchOptions["backoff"];
@@ -79,89 +78,179 @@ const toAbortError = (
   reason,
 });
 
+export type AttemptOutcome =
+  | { type: "preAborted"; reason: unknown }
+  | { type: "responded"; response: Response }
+  | { type: "thrown"; error: unknown; timedOut: boolean; aborted: boolean; abortReason: unknown };
+
+export type RetryPolicy = {
+  url: string;
+  maxRetries: number;
+  retryOn: NonNullable<FetchOptions["retryOn"]>;
+  methodRetryable: boolean;
+  timeoutMs: number | undefined;
+};
+
+export type Decision =
+  | { type: "retry"; discard?: Response }
+  | { type: "return"; result: Result<Response, FetchError>; discard?: Response };
+
+const attemptOnce = async (
+  input: string | URL | Request,
+  init: RequestInit | undefined,
+  userSignal: AbortSignal | null | undefined,
+  timeoutMs: number | undefined,
+): Promise<AttemptOutcome> => {
+  if (userSignal?.aborted) {
+    return { type: "preAborted", reason: userSignal.reason };
+  }
+  const controller = new AbortController();
+  const onUserAbort = () => {
+    controller.abort(userSignal?.reason);
+  };
+  userSignal?.addEventListener("abort", onUserAbort, { once: true });
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  let timedOut = false;
+  if (timeoutMs !== undefined) {
+    timeoutId = setTimeout(() => {
+      timedOut = true;
+      controller.abort(new DOMException("fetch timeout", "TimeoutError"));
+    }, timeoutMs);
+  }
+  try {
+    const response = await fetch(input, { ...init, signal: controller.signal });
+    return { type: "responded", response };
+  } catch (error) {
+    return {
+      type: "thrown",
+      error,
+      timedOut,
+      aborted: controller.signal.aborted,
+      abortReason: controller.signal.reason,
+    };
+  } finally {
+    if (timeoutId !== undefined) clearTimeout(timeoutId);
+    userSignal?.removeEventListener("abort", onUserAbort);
+  }
+};
+
+export const decide = (outcome: AttemptOutcome, policy: RetryPolicy, attempt: number): Decision => {
+  const retryable = attempt < policy.maxRetries && policy.methodRetryable;
+  switch (outcome.type) {
+    case "preAborted":
+      return { type: "return", result: new Err(toAbortError(policy.url, outcome.reason)) };
+    case "thrown": {
+      if (outcome.timedOut) {
+        return retryable
+          ? { type: "retry" }
+          : {
+              type: "return",
+              result: new Err({
+                type: "timeout_error",
+                url: policy.url,
+                timeoutMs: policy.timeoutMs ?? 0,
+              }),
+            };
+      }
+      if (outcome.aborted) {
+        return { type: "return", result: new Err(toAbortError(policy.url, outcome.abortReason)) };
+      }
+      const message =
+        outcome.error instanceof Error ? outcome.error.message : String(outcome.error);
+      return retryable
+        ? { type: "retry" }
+        : {
+            type: "return",
+            result: new Err({
+              type: "network_error",
+              url: policy.url,
+              message,
+              cause: outcome.error,
+            }),
+          };
+    }
+    case "responded": {
+      const { response } = outcome;
+      if (response.ok) {
+        return { type: "return", result: new Ok(response) };
+      }
+      if (response.status === 404) {
+        return {
+          type: "return",
+          result: new Err({ type: "not_found", url: policy.url }),
+          discard: response,
+        };
+      }
+      if (retryable && isRetryableStatus(response.status, policy.retryOn)) {
+        return { type: "retry", discard: response };
+      }
+      return {
+        type: "return",
+        result: new Err({
+          type: "fetch_error",
+          status: response.status,
+          error: response.statusText,
+        }),
+        discard: response,
+      };
+    }
+  }
+};
+
+type DelayConfig = {
+  initialDelayMs: number;
+  backoff: NonNullable<FetchOptions["backoff"]>;
+  maxDelayMs: number | undefined;
+};
+
+const waitForRetry = async (
+  attempt: number,
+  config: DelayConfig,
+  url: string,
+  userSignal: AbortSignal | null | undefined,
+): Promise<Result<void, FetchError>> => {
+  try {
+    await sleep(
+      computeDelay(attempt, config.initialDelayMs, config.backoff, config.maxDelayMs),
+      userSignal,
+    );
+    return new Ok(undefined);
+  } catch (reason) {
+    return new Err(toAbortError(url, reason));
+  }
+};
+
+const discardBody = async (response: Response | undefined): Promise<void> => {
+  try {
+    await response?.body?.cancel();
+  } catch {}
+};
+
 export const kisoFetch: FetchFn = (input, init, options) => {
   const { maxRetries, initialDelayMs, backoff, maxDelayMs, retryOn, timeoutMs } =
     normalizeOptions(options);
   const url = resolveUrl(input);
+  const userSignal = init?.signal ?? (input instanceof Request ? input.signal : undefined);
   const methodRetryable = IDEMPOTENT_METHODS.has(resolveMethod(input, init));
+  const policy: RetryPolicy = { url, maxRetries, retryOn, methodRetryable, timeoutMs };
 
   const run = async (): Promise<Result<Response, FetchError>> => {
     for (let attempt = 0; ; attempt++) {
-      const controller = new AbortController();
-      const userSignal = init?.signal ?? (input instanceof Request ? input.signal : undefined);
-      if (userSignal?.aborted) {
-        return new Err(toAbortError(url, userSignal.reason));
+      const outcome = await attemptOnce(input, init, userSignal, timeoutMs);
+      const decision = decide(outcome, policy, attempt);
+      await discardBody(decision.discard);
+      if (decision.type === "return") {
+        return decision.result;
       }
-      const onUserAbort = () => {
-        controller.abort(userSignal?.reason);
-      };
-      userSignal?.addEventListener("abort", onUserAbort, { once: true });
-
-      let timeoutId: NodeJS.Timeout | undefined;
-      let timedOut = false;
-      if (timeoutMs !== undefined) {
-        timeoutId = setTimeout(() => {
-          timedOut = true;
-          controller.abort(new DOMException("fetch timeout", "TimeoutError"));
-        }, timeoutMs);
+      const waited = await waitForRetry(
+        attempt,
+        { initialDelayMs, backoff, maxDelayMs },
+        url,
+        userSignal,
+      );
+      if (waited.isErr()) {
+        return new Err(waited.error);
       }
-
-      let response: Response | undefined;
-      try {
-        response = await fetch(input, { ...init, signal: controller.signal });
-      } catch (error) {
-        if (timeoutId !== undefined) clearTimeout(timeoutId);
-        userSignal?.removeEventListener("abort", onUserAbort);
-        if (timedOut) {
-          if (attempt < maxRetries && methodRetryable) {
-            try {
-              await sleep(computeDelay(attempt, initialDelayMs, backoff, maxDelayMs), userSignal);
-            } catch (reason) {
-              return new Err(toAbortError(url, reason));
-            }
-            continue;
-          }
-          return new Err({ type: "timeout_error", url, timeoutMs: timeoutMs ?? 0 });
-        }
-        if (controller.signal.aborted) {
-          return new Err(toAbortError(url, controller.signal.reason));
-        }
-        const message = error instanceof Error ? error.message : String(error);
-        if (attempt < maxRetries && methodRetryable) {
-          try {
-            await sleep(computeDelay(attempt, initialDelayMs, backoff, maxDelayMs), userSignal);
-          } catch (reason) {
-            return new Err(toAbortError(url, reason));
-          }
-          continue;
-        }
-        return new Err({ type: "network_error", url, message, cause: error });
-      }
-
-      if (timeoutId !== undefined) clearTimeout(timeoutId);
-      userSignal?.removeEventListener("abort", onUserAbort);
-
-      if (response.ok) {
-        return new Ok(response);
-      }
-      if (response.status === 404) {
-        return new Err({ type: "not_found", url });
-      }
-      const retryable = isRetryableStatus(response.status, retryOn);
-      if (retryable && attempt < maxRetries && methodRetryable) {
-        await response.body?.cancel().catch(() => undefined);
-        try {
-          await sleep(computeDelay(attempt, initialDelayMs, backoff, maxDelayMs), userSignal);
-        } catch (reason) {
-          return new Err(toAbortError(url, reason));
-        }
-        continue;
-      }
-      return new Err({
-        type: "fetch_error",
-        status: response.status,
-        error: response.statusText,
-      });
     }
   };
 

@@ -81,7 +81,11 @@ export class YukiCoderService implements ContestProvider<
     problemNo: number,
   ): ResultAsync<TestCase[], ProviderError> {
     return ctx
-      .fetch(`https://yukicoder.me/problems/no/${problemNo}`)
+      .fetch(`https://yukicoder.me/problems/no/${problemNo}`, undefined, {
+        maxRetries: 3,
+        timeoutMs: 1500,
+        backoff: "exponential",
+      })
       .andThen((res) =>
         fromPromise(res.text(), (error): UnexpectedError => ({
           type: "unexpected_error",

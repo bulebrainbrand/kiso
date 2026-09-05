@@ -70,8 +70,22 @@ describe("normalizeOptions", () => {
     expect(normalizeOptions({ maxRetries: NaN }).maxRetries).toBe(0);
   });
 
-  it("initialDelayMs の負数は 0 になる", () => {
-    expect(normalizeOptions({ initialDelayMs: -5 }).initialDelayMs).toBe(0);
+  it("initialDelayMs の無効値はデフォルトの 100 になる", () => {
+    expect(normalizeOptions({ initialDelayMs: -5 }).initialDelayMs).toBe(100);
+    expect(normalizeOptions({ initialDelayMs: Infinity }).initialDelayMs).toBe(100);
+    expect(normalizeOptions({ initialDelayMs: NaN }).initialDelayMs).toBe(100);
+  });
+
+  it("timeoutMs の無効値は undefined になる", () => {
+    expect(normalizeOptions({ timeoutMs: Infinity }).timeoutMs).toBeUndefined();
+    expect(normalizeOptions({ timeoutMs: NaN }).timeoutMs).toBeUndefined();
+    expect(normalizeOptions({ timeoutMs: -1 }).timeoutMs).toBeUndefined();
+  });
+
+  it("maxDelayMs の無効値は undefined になる", () => {
+    expect(normalizeOptions({ maxDelayMs: Infinity }).maxDelayMs).toBeUndefined();
+    expect(normalizeOptions({ maxDelayMs: NaN }).maxDelayMs).toBeUndefined();
+    expect(normalizeOptions({ maxDelayMs: -1 }).maxDelayMs).toBeUndefined();
   });
 });
 

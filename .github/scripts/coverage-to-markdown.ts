@@ -1,3 +1,4 @@
+import { ok } from "assert";
 import { existsSync, readFileSync } from "fs";
 import path from "path";
 
@@ -154,7 +155,7 @@ ${ngFile.map(([name, obj]) => `- [${name}](${name}) (${obj.coverage.statements.p
 
 </details>
 
-<details><summary>100% coverage files (${notrelatedFile.length})!</summary>
+<details><summary>100% coverage files (${ok.length})!</summary>
 
 ${okFile.map(([name, obj]) => `- [${name}](${name}) (test:[${obj.test}](${obj.test}))`).join("\n")}
 

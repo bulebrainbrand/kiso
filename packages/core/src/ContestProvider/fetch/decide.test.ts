@@ -101,6 +101,39 @@ describe("decide", () => {
     });
   });
 
+  it("timeoutMsなしの超過はtimeoutMs: 0のtimeout_error", () => {
+    const outcome: AttemptOutcome = {
+      type: "thrown",
+      error: new DOMException("fetch timeout", "TimeoutError"),
+      timedOut: true,
+      aborted: true,
+      abortReason: new DOMException("fetch timeout", "TimeoutError"),
+    };
+    expect(decide(outcome, basePolicy, 1)).toEqual({
+      type: "return",
+      result: new Err({ type: "timeout_error", url: "https://example.com/", timeoutMs: 0 }),
+    });
+  });
+
+  it("Errorインスタンスでない原因はString化してnetwork_error", () => {
+    const outcome: AttemptOutcome = {
+      type: "thrown",
+      error: "boom",
+      timedOut: false,
+      aborted: false,
+      abortReason: undefined,
+    };
+    expect(decide(outcome, basePolicy, 1)).toEqual({
+      type: "return",
+      result: new Err({
+        type: "network_error",
+        url: "https://example.com/",
+        message: "boom",
+        cause: "boom",
+      }),
+    });
+  });
+
   it("abortは即abort_error", () => {
     const reason = new Error("user abort");
     const aborted: AttemptOutcome = {

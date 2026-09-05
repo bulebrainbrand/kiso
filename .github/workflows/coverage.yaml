@@ -19,5 +19,5 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: coverage
-          path: .kiso-ci
+          path: .kiso-ci/
           retention-days: 1

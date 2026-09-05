@@ -6,7 +6,8 @@
     "read": "allow",
     "edit": {
       "*": "ask",
-      "packages/*/src/**/*": "allow"
+      "packages/*/src/**/*.ts": "allow",
+      "scripts/*.ts": "allow"
     },
     "bash": {
       "*": "ask",
@@ -22,7 +23,9 @@
       "git diff *": "allow",
       "git show *": "allow",
       "vp check *": "allow",
-      "vp test *": "allow"
+      "vp test *": "allow",
+      "wc *": "allow",
+      "pwd *": "allow"
     },
     "todowrite": "allow",
     "grep": "allow",

@@ -50,7 +50,7 @@ jobs:
 
       - name: render coverage
         if: steps.pr.outputs.number != ''
-        run: node .github/scripts/coverage-to-markdown.ts .kiso-ci/test-result.json "${{ github.event.workflow_run.head_sha }}" > body.md
+        run: node .github/scripts/coverage-to-markdown.ts .kiso-ci/test-result.json .kiso-ci/all-test.json "${{ github.event.workflow_run.head_sha }}" > body.md
 
       - name: comment to PR
         if: steps.pr.outputs.number != ''

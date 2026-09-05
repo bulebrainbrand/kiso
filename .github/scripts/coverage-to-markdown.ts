@@ -109,17 +109,17 @@ export function coverageToMarkdown(
   );
   const okFile = successFile.filter(
     ([_key, value]) =>
-      value.coverage.branches.pct === 100 &&
-      value.coverage.functions.pct === 100 &&
-      value.coverage.lines.pct === 100 &&
-      value.coverage.statements.pct === 100,
+      value.coverage.branches.pct === 100
+      && value.coverage.functions.pct === 100
+      && value.coverage.lines.pct === 100
+      && value.coverage.statements.pct === 100,
   );
   const ngFile = successFile.filter(
     ([_key, value]) =>
-      value.coverage.branches.pct !== 100 &&
-      value.coverage.functions.pct !== 100 &&
-      value.coverage.lines.pct !== 100 &&
-      value.coverage.statements.pct !== 100,
+      value.coverage.branches.pct !== 100
+      && value.coverage.functions.pct !== 100
+      && value.coverage.lines.pct !== 100
+      && value.coverage.statements.pct !== 100,
   );
   const text = `\
 ## coverage report

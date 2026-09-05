@@ -19,9 +19,9 @@ export const resolveMethod = (
   init?: RequestInit,
 ): string => {
   const raw =
-    init?.method ??
-    (input instanceof Request ? input.method : undefined) ??
-    "GET";
+    init?.method
+    ?? (input instanceof Request ? input.method : undefined)
+    ?? "GET";
   return raw.toUpperCase();
 };
 

@@ -18,9 +18,9 @@ export const decide = (
   attempt: number,
 ): Decision => {
   const retryable =
-    attempt < policy.maxRetries &&
-    policy.methodRetryable &&
-    policy.bodyRetryable;
+    attempt < policy.maxRetries
+    && policy.methodRetryable
+    && policy.bodyRetryable;
   switch (outcome.type) {
     case "preAborted":
       return {

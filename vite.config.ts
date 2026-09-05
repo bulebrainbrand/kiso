@@ -17,5 +17,14 @@ export default defineConfig({
   },
   run: {
     cache: true,
+    tasks: {
+      coverage: {
+        command: [
+          `git diff --name-only $(git log --reverse --format="%H" | head -n 1) HEAD | node scripts/testByFile.ts`,
+        ],
+        cwd: ".",
+        cache: false,
+      },
+    },
   },
 });

@@ -26,15 +26,6 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
 
-      - name: download
-        if: steps.pr.outputs.number != ''
-        uses: actions/download-artifact@v8
-        with:
-          name: coverage
-          path: .kiso-ci/
-          run-id: ${{ github.event.workflow_run.id }}
-          github-token: ${{ github.token }}
-
       - name: checkout scripts
         if: steps.pr.outputs.number != ''
         uses: actions/checkout@v7
@@ -47,6 +38,15 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+
+      - name: download
+        if: steps.pr.outputs.number != ''
+        uses: actions/download-artifact@v8
+        with:
+          name: coverage
+          path: .kiso-ci/
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
 
       - name: render coverage
         if: steps.pr.outputs.number != ''

@@ -1,9 +1,9 @@
 import { Err, Ok, ResultAsync, type Result } from "neverthrow";
-import type { FetchFn, FetchOptions } from "@kiso/types";
+import type { FetchError, FetchFn, FetchOptions } from "@kiso/types";
 
 const DEFAULT_MAX_RETRIES = 0;
 const DEFAULT_INITIAL_DELAY_MS = 100;
-const DEFAULT_BACKOFF = "exponential" as const;
+const DEFAULT_BACKOFF = "exponential" satisfies FetchOptions["backoff"];
 const DEFAULT_TIMEOUT_MS: number | undefined = undefined;
 
 export const resolveUrl = (input: string | URL | Request): string => {
@@ -12,7 +12,7 @@ export const resolveUrl = (input: string | URL | Request): string => {
   return input.url;
 };
 
-const IDEMPOTENT_METHODS = new Set(["GET", "HEAD", "OPTIONS", "TRACE", "PUT", "DELETE"]);
+const IDEMPOTENT_METHODS = new Set(["GET", "HEAD", "OPTIONS", "TRACE", "PUT", "DELETE", "QUERY"]);
 
 export const resolveMethod = (input: string | URL | Request, init?: RequestInit): string => {
   const raw = init?.method ?? (input instanceof Request ? input.method : undefined) ?? "GET";
@@ -73,7 +73,7 @@ const normalizeOptions = (options?: FetchOptions) => {
 const toAbortError = (
   url: string,
   reason: unknown,
-): Extract<import("@kiso/types").FetchError, { type: "abort_error" }> => ({
+): Extract<FetchError, { type: "abort_error" }> => ({
   type: "abort_error",
   url,
   reason,
@@ -85,7 +85,7 @@ export const kisoFetch: FetchFn = (input, init, options) => {
   const url = resolveUrl(input);
   const methodRetryable = IDEMPOTENT_METHODS.has(resolveMethod(input, init));
 
-  const run = async (): Promise<Result<Response, import("@kiso/types").FetchError>> => {
+  const run = async (): Promise<Result<Response, FetchError>> => {
     for (let attempt = 0; ; attempt++) {
       const controller = new AbortController();
       const userSignal = init?.signal ?? (input instanceof Request ? input.signal : undefined);

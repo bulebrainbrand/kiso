@@ -13,7 +13,7 @@ const vitest = await createVitest("test", {
 });
 const isTestFile = (file: string): boolean =>
   vitest.projects.some((project) => project.matchesTestGlob(file));
-const ignorePatterns = ["vite.config.ts"];
+const ignorePatterns = ["vite.config.ts", "!*.ts"];
 const toTestFile = (file: string): string =>
   path.join(
     path.dirname(file),
@@ -30,13 +30,13 @@ const targetFiles = fullStr
   .map((str) => path.resolve(str))
   .filter((str) => !isTestFile(str));
 const testFiles = targetFiles.map((str) => toTestFile(str));
-type Coverage = {
+export type Coverage = {
   total: number;
   covered: number;
   skipped: number;
   pct: number;
 };
-const result: Record<
+export type EachTestCoverageResult = Record<
   string,
   | {
       type: "success";
@@ -51,7 +51,8 @@ const result: Record<
   | { type: "failed"; error: unknown[]; test: string }
   | { type: "not_related"; test: string }
   | { type: "not_found"; expect: string }
-> = {};
+>;
+const result: EachTestCoverageResult = {};
 for (const [i, file] of testFiles.entries()) {
   const target = targetFiles[i];
   if (!existsSync(target)) continue;

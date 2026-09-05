@@ -1,3 +1,5 @@
+import { mkdirSync, writeFileSync } from "fs";
+
 import { startVitest } from "vite-plus/test/node";
 
 const vitest = await startVitest("test", undefined, {
@@ -9,3 +11,9 @@ const vitest = await startVitest("test", undefined, {
 });
 
 await vitest.close();
+
+mkdirSync(".kiso-ci", { recursive: true });
+writeFileSync(
+  ".kiso-ci/workspace.json",
+  JSON.stringify({ workspace: process.cwd() }),
+);

@@ -1,7 +1,7 @@
 name: coverage-reporter
 on:
   workflow_run:
-    workflows: ["saveCoverage"]
+    workflows: [coverage]
     types:
       - completed
 

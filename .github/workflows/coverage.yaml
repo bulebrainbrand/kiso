@@ -1,7 +1,7 @@
-name: "coverage"
+name: coverage
 on: pull_request
 jobs:
-  saveCoverage:
+  main:
     runs-on: ubuntu-latest
     steps:
       - run: echo "fetch_depth=$(( commits + 1 ))" >> $GITHUB_ENV

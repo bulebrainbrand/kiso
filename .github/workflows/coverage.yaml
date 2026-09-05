@@ -1,0 +1,22 @@
+name: "coverage"
+on: pull_request
+jobs:
+  saveCoverage:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "fetch_depth=$(( commits + 1 ))" >> $GITHUB_ENV
+        env:
+          commits: ${{ github.event.pull_request.commits }}
+      - name: checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: ${{ env.fetch_depth }}
+      - name: setup vp
+        uses: voidzero-dev/setup-vp@v1.19.0
+      - name: main
+        run: vpr coverage
+      - name: upload actions
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: .kiso-ci/test-result.json

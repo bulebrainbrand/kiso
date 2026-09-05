@@ -30,31 +30,35 @@ const targetFiles = fullStr
   .map((str) => path.resolve(str))
   .filter((str) => !isTestFile(str));
 const testFiles = targetFiles.map((str) => toTestFile(str));
+
 export type Coverage = {
   total: number;
   covered: number;
   skipped: number;
   pct: number;
 };
+
+export type SuccessFile = {
+  type: "success";
+  coverage: {
+    lines: Coverage;
+    functions: Coverage;
+    statements: Coverage;
+    branches: Coverage;
+  };
+  test: string;
+};
+
+export type FailedFile = { type: "failed"; error: unknown[]; test: string };
+export type NotRelatedFile = { type: "not_related"; test: string };
+export type NotFoundFile = { type: "not_found"; expect: string };
 export type EachTestCoverageResult = Record<
   string,
-  | {
-      type: "success";
-      coverage: {
-        lines: Coverage;
-        functions: Coverage;
-        statements: Coverage;
-        branches: Coverage;
-      };
-      test: string;
-    }
-  | { type: "failed"; error: unknown[]; test: string }
-  | { type: "not_related"; test: string }
-  | { type: "not_found"; expect: string }
+  SuccessFile | FailedFile | NotRelatedFile | NotFoundFile
 >;
 const result: EachTestCoverageResult = {};
 for (const [i, file] of testFiles.entries()) {
-  const target = targetFiles[i];
+  const target = path.relative(process.cwd(), targetFiles[i]);
   if (!existsSync(target)) continue;
   if (!existsSync(file)) {
     result[target] = { type: "not_found", expect: target };
@@ -62,7 +66,11 @@ for (const [i, file] of testFiles.entries()) {
   }
   const { unhandledErrors } = await vitest.start([file]);
   if (unhandledErrors.length !== 0) {
-    result[target] = { type: "failed", error: unhandledErrors, test: file };
+    result[target] = {
+      type: "failed",
+      error: unhandledErrors,
+      test: path.relative(process.cwd(), file),
+    };
     continue;
   }
   const coverage = JSON.parse(
@@ -70,9 +78,16 @@ for (const [i, file] of testFiles.entries()) {
   );
   const coverageResult = coverage[target];
   if (coverageResult) {
-    result[target] = { type: "success", coverage, test: file };
+    result[target] = {
+      type: "success",
+      coverage,
+      test: path.relative(process.cwd(), file),
+    };
   } else {
-    result[target] = { type: "not_related", test: file };
+    result[target] = {
+      type: "not_related",
+      test: path.relative(process.cwd(), file),
+    };
   }
   rmSync("./coverage/coverage-summary.json");
 }

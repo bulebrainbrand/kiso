@@ -1,7 +1,7 @@
 name: coverage-reporter
 on:
   workflow_run:
-    workflows: ["coverage"]
+    workflows: ["saveCoverage"]
     types:
       - completed
 
@@ -15,7 +15,7 @@ jobs:
       - name: download
         uses: actions/download-artifact@v8
         with:
-          name: my-artifact
+          name: coverage
           path: .kiso-ci/test-result.json
       - name: temp
         run: cat .kiso-ci/test-result.json

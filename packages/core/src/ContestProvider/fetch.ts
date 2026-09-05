@@ -108,7 +108,7 @@ export const kisoFetch: FetchFn = (input, init, options) => {
 
       let response: Response | undefined;
       try {
-        response = await globalThis.fetch(input, { ...init, signal: controller.signal });
+        response = await fetch(input, { ...init, signal: controller.signal });
       } catch (error) {
         if (timeoutId !== undefined) clearTimeout(timeoutId);
         userSignal?.removeEventListener("abort", onUserAbort);

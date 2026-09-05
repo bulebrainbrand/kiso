@@ -14,6 +14,9 @@ export default defineConfig({
     bracketSameLine: false,
     bracketSpacing: true,
     experimentalOperatorPosition: "start",
+    jsdoc: {
+      lineWrappingStyle: "balance",
+    },
   },
   lint: {
     jsPlugins: [{ name: "vite-plus", specifier: "vite-plus/oxlint-plugin" }],

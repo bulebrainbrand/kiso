@@ -124,7 +124,11 @@ export class YukiCoderService implements ContestProvider<
         .getItem("API_KEY")
         .map((token) =>
           token
-            ? `api token: ${token.slice(0, 5) + "*".repeat(token.length - 5)}`
+            ? `api token: ${
+                token.length <= 5
+                  ? "*".repeat(token.length)
+                  : token.slice(0, 5) + "*".repeat(token.length - 5)
+              }`
             : "no api token",
         ),
     );

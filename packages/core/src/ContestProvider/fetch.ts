@@ -149,6 +149,7 @@ export const kisoFetch: FetchFn = (input, init, options) => {
       }
       const retryable = isRetryableStatus(response.status, retryOn);
       if (retryable && attempt < maxRetries && methodRetryable) {
+        await response.body?.cancel().catch(() => undefined);
         try {
           await sleep(computeDelay(attempt, initialDelayMs, backoff, maxDelayMs), userSignal);
         } catch (reason) {

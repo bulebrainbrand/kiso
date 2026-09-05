@@ -338,4 +338,43 @@ describe("kisoFetch", () => {
     expect(mock).toHaveBeenCalledTimes(2);
     expect(result.isOk()).toBe(true);
   });
+
+  it("リトライ時に捨てる応答の body をキャンセルする", async () => {
+    let cancelled = false;
+    const stream = new ReadableStream({
+      cancel() {
+        cancelled = true;
+      },
+    });
+    const mock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response(stream, { status: 500 }))
+      .mockResolvedValueOnce(okResponse());
+    vi.stubGlobal("fetch", mock);
+    const result = await kisoFetch("https://example.com/", undefined, {
+      maxRetries: 1,
+      initialDelayMs: 0,
+    });
+    expect(result.isOk()).toBe(true);
+    expect(cancelled).toBe(true);
+  });
+
+  it("body のキャンセル失敗でもリトライは継続する", async () => {
+    const stream = new ReadableStream({
+      cancel() {
+        throw new Error("cancel failed");
+      },
+    });
+    const mock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response(stream, { status: 500 }))
+      .mockResolvedValueOnce(okResponse());
+    vi.stubGlobal("fetch", mock);
+    const result = await kisoFetch("https://example.com/", undefined, {
+      maxRetries: 1,
+      initialDelayMs: 0,
+    });
+    expect(mock).toHaveBeenCalledTimes(2);
+    expect(result.isOk()).toBe(true);
+  });
 });

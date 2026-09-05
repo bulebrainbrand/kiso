@@ -1,4 +1,5 @@
 import type { ResultAsync } from "neverthrow";
+import type * as v from "valibot";
 
 import type { Contest } from "../contest.ts";
 import type { BaseContext } from "./context.ts";
@@ -8,12 +9,21 @@ import type { JSONPrimitive, StorageError, StorageType } from "./storage.ts";
 
 export type AuthError = { type: "auth_error"; reason: "invalid_credentials" };
 
-export type ProviderError = StorageError | FetchError | AuthError;
-export type ContestProvider<
+export type ValidationError = {
+  type: "validation_error";
+  issues: v.GenericIssue[];
+};
+
+export type ProviderError =
+  | StorageError
+  | FetchError
+  | AuthError
+  | ValidationError;
+export interface ContestProvider<
   S extends StorageType,
   LA extends Record<string, JSONPrimitive>,
   LO = LA,
-> = {
+> {
   readonly name: string;
   fetchContest(
     ctx: BaseContext<S>,
@@ -22,4 +32,4 @@ export type ContestProvider<
   loginSchema: LoginSchema<LA, LO>;
   login(ctx: BaseContext<S>, credentials: LO): ResultAsync<void, ProviderError>;
   whoami(ctx: BaseContext<S>): ResultAsync<string, ProviderError>;
-};
+}

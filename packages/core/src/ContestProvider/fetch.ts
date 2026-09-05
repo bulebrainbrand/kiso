@@ -12,6 +12,13 @@ export const resolveUrl = (input: string | URL | Request): string => {
   return input.url;
 };
 
+const IDEMPOTENT_METHODS = new Set(["GET", "HEAD", "OPTIONS", "TRACE", "PUT", "DELETE"]);
+
+export const resolveMethod = (input: string | URL | Request, init?: RequestInit): string => {
+  const raw = init?.method ?? (input instanceof Request ? input.method : undefined) ?? "GET";
+  return raw.toUpperCase();
+};
+
 export const isRetryableStatus = (
   status: number,
   retryOn: NonNullable<FetchOptions["retryOn"]>,
@@ -76,6 +83,7 @@ export const kisoFetch: FetchFn = (input, init, options) => {
   const { maxRetries, initialDelayMs, backoff, maxDelayMs, retryOn, timeoutMs } =
     normalizeOptions(options);
   const url = resolveUrl(input);
+  const methodRetryable = IDEMPOTENT_METHODS.has(resolveMethod(input, init));
 
   const run = async (): Promise<Result<Response, import("@kiso/types").FetchError>> => {
     for (let attempt = 0; ; attempt++) {
@@ -105,7 +113,7 @@ export const kisoFetch: FetchFn = (input, init, options) => {
         if (timeoutId !== undefined) clearTimeout(timeoutId);
         userSignal?.removeEventListener("abort", onUserAbort);
         if (timedOut) {
-          if (attempt < maxRetries) {
+          if (attempt < maxRetries && methodRetryable) {
             try {
               await sleep(computeDelay(attempt, initialDelayMs, backoff, maxDelayMs), userSignal);
             } catch (reason) {
@@ -119,7 +127,7 @@ export const kisoFetch: FetchFn = (input, init, options) => {
           return new Err(toAbortError(url, controller.signal.reason));
         }
         const message = error instanceof Error ? error.message : String(error);
-        if (attempt < maxRetries) {
+        if (attempt < maxRetries && methodRetryable) {
           try {
             await sleep(computeDelay(attempt, initialDelayMs, backoff, maxDelayMs), userSignal);
           } catch (reason) {
@@ -140,7 +148,7 @@ export const kisoFetch: FetchFn = (input, init, options) => {
         return new Err({ type: "not_found", url });
       }
       const retryable = isRetryableStatus(response.status, retryOn);
-      if (retryable && attempt < maxRetries) {
+      if (retryable && attempt < maxRetries && methodRetryable) {
         try {
           await sleep(computeDelay(attempt, initialDelayMs, backoff, maxDelayMs), userSignal);
         } catch (reason) {

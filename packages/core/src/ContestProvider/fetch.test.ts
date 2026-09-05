@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
-import { computeDelay, isRetryableStatus, kisoFetch, resolveUrl } from "./fetch.ts";
+import { computeDelay, isRetryableStatus, kisoFetch, resolveMethod, resolveUrl } from "./fetch.ts";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -42,6 +42,17 @@ describe("computeDelay", () => {
 
   it("maxDelayMs で頭打ちになる", () => {
     expect(computeDelay(5, 100, "exponential", 250)).toBe(250);
+  });
+});
+
+describe("resolveMethod", () => {
+  it("init.method が Request.method より優先され、未指定は GET", () => {
+    expect(resolveMethod("https://example.com/")).toBe("GET");
+    expect(resolveMethod("https://example.com/", { method: "post" })).toBe("POST");
+    expect(
+      resolveMethod(new Request("https://example.com/", { method: "POST" }), { method: "PUT" }),
+    ).toBe("PUT");
+    expect(resolveMethod(new Request("https://example.com/", { method: "PATCH" }))).toBe("PATCH");
   });
 });
 
@@ -276,5 +287,55 @@ describe("kisoFetch", () => {
     } else {
       expect.unreachable();
     }
+  });
+
+  it("POST はステータス失敗でもリトライしない", async () => {
+    const mock = vi.fn(async () => new Response("e", { status: 500, statusText: "ISE" }));
+    vi.stubGlobal("fetch", mock);
+    const result = await kisoFetch(
+      "https://example.com/",
+      { method: "POST" },
+      { maxRetries: 2, initialDelayMs: 0 },
+    );
+    expect(mock).toHaveBeenCalledTimes(1);
+    if (result.isErr()) {
+      expect(result.error).toEqual({ type: "fetch_error", status: 500, error: "ISE" });
+    } else {
+      expect.unreachable();
+    }
+  });
+
+  it("POST はネットワーク失敗でもリトライしない", async () => {
+    const cause = new TypeError("fetch failed");
+    const mock = vi.fn(async () => {
+      throw cause;
+    });
+    vi.stubGlobal("fetch", mock);
+    const result = await kisoFetch(
+      "https://example.com/",
+      { method: "POST" },
+      { maxRetries: 2, initialDelayMs: 0 },
+    );
+    expect(mock).toHaveBeenCalledTimes(1);
+    if (result.isErr()) {
+      expect(result.error.type).toBe("network_error");
+    } else {
+      expect.unreachable();
+    }
+  });
+
+  it("PUT は冪等なのでリトライする", async () => {
+    const mock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response("e", { status: 500 }))
+      .mockResolvedValueOnce(okResponse());
+    vi.stubGlobal("fetch", mock);
+    const result = await kisoFetch(
+      "https://example.com/",
+      { method: "PUT" },
+      { maxRetries: 1, initialDelayMs: 0 },
+    );
+    expect(mock).toHaveBeenCalledTimes(2);
+    expect(result.isOk()).toBe(true);
   });
 });

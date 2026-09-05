@@ -97,7 +97,7 @@ export const kisoFetch: FetchFn = (input, init, options) => {
       };
       userSignal?.addEventListener("abort", onUserAbort, { once: true });
 
-      let timeoutId: ReturnType<typeof setTimeout> | undefined;
+      let timeoutId: NodeJS.Timeout | undefined;
       let timedOut = false;
       if (timeoutMs !== undefined) {
         timeoutId = setTimeout(() => {

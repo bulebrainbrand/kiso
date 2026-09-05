@@ -1,0 +1,21 @@
+name: coverage-reporter
+on:
+  workflow_run:
+    workflows: ["coverage"]
+    types:
+      - completed
+
+jobs:
+  on-complete:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+
+    steps:
+      - name: download
+        uses: actions/download-artifact@v8
+        with:
+          name: my-artifact
+          path: .kiso-ci/test-result.json
+      - name: temp
+        run: cat .kiso-ci/test-result.json

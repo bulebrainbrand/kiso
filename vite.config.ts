@@ -13,6 +13,7 @@ export default defineConfig({
       reporter: ["text"],
       enabled: true,
     },
+    isolate: false,
   },
   run: {
     cache: true,

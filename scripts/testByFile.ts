@@ -17,9 +17,9 @@ const ignorePatterns = ["vite.config.ts", "!*.ts"];
 const toTestFile = (file: string): string =>
   path.join(
     path.dirname(file),
-    path.basename(file).slice(0, -path.extname(file).length) +
-      ".test" +
-      path.extname(file),
+    path.basename(file).slice(0, -path.extname(file).length)
+      + ".test"
+      + path.extname(file),
   );
 const targetFiles = fullStr
   .split("\n")

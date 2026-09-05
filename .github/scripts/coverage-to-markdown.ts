@@ -1,14 +1,15 @@
+import { ok } from "assert";
 import { existsSync, readFileSync } from "fs";
 import path from "path";
 
-import {
+import type {
   EachTestCoverageResult,
   FailedFile,
   NotFoundFile,
   NotRelatedFile,
   SuccessFile,
 } from "../../scripts/testByFile";
-import { AllTestResult } from "../../scripts/types";
+import type { AllTestResult } from "../../scripts/types";
 
 export interface WorkspaceMeta {
   workspace: string;
@@ -109,17 +110,17 @@ export function coverageToMarkdown(
   );
   const okFile = successFile.filter(
     ([_key, value]) =>
-      value.coverage.branches.pct === 100 &&
-      value.coverage.functions.pct === 100 &&
-      value.coverage.lines.pct === 100 &&
-      value.coverage.statements.pct === 100,
+      value.coverage.branches.pct === 100
+      && value.coverage.functions.pct === 100
+      && value.coverage.lines.pct === 100
+      && value.coverage.statements.pct === 100,
   );
   const ngFile = successFile.filter(
     ([_key, value]) =>
-      value.coverage.branches.pct !== 100 &&
-      value.coverage.functions.pct !== 100 &&
-      value.coverage.lines.pct !== 100 &&
-      value.coverage.statements.pct !== 100,
+      value.coverage.branches.pct !== 100
+      && value.coverage.functions.pct !== 100
+      && value.coverage.lines.pct !== 100
+      && value.coverage.statements.pct !== 100,
   );
   const text = `\
 ## coverage report
@@ -154,7 +155,7 @@ ${ngFile.map(([name, obj]) => `- [${name}](${name}) (${obj.coverage.statements.p
 
 </details>
 
-<details><summary>100% coverage files (${notrelatedFile.length})!</summary>
+<details><summary>100% coverage files (${ok.length})!</summary>
 
 ${okFile.map(([name, obj]) => `- [${name}](${name}) (test:[${obj.test}](${obj.test}))`).join("\n")}
 

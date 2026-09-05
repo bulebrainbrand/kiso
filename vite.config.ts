@@ -6,6 +6,17 @@ export default defineConfig({
     printWidth: 80,
     quoteProps: "as-needed",
     sortImports: true,
+    semi: true,
+    trailingComma: "all",
+    singleQuote: false,
+    sortPackageJson: true,
+    arrowParens: "always",
+    bracketSameLine: false,
+    bracketSpacing: true,
+    experimentalOperatorPosition: "start",
+    jsdoc: {
+      lineWrappingStyle: "balance",
+    },
   },
   lint: {
     jsPlugins: [{ name: "vite-plus", specifier: "vite-plus/oxlint-plugin" }],
@@ -25,7 +36,7 @@ export default defineConfig({
     tasks: {
       coverage: {
         command: [
-          `git diff --name-only $(git log --reverse --format="%H" | head -n 1) HEAD | node scripts/testByFile.ts && node scripts/allTest.ts`,
+          `git diff --name-only $(git merge-base origin/main HEAD) HEAD | node scripts/testByFile.ts && node scripts/allTest.ts`,
         ],
         cwd: ".",
         cache: false,

@@ -8,20 +8,70 @@ on:
 
 jobs:
   on-complete:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
       contents: read
-      actions: read
+      actions: write
 
     steps:
+      - name: resolve PR number
+        id: pr
+        run: |
+          NUM="${{ github.event.workflow_run.pull_requests[0].number }}"
+          if [ -z "$NUM" ]; then
+            NUM=$(gh pr list --head "${{ github.event.workflow_run.head_branch }}" --repo "${{ github.repository }}" --json number -q '.[0].number')
+          fi
+          echo "number=$NUM" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ github.token }}
+
       - name: download
+        if: steps.pr.outputs.number != ''
         uses: actions/download-artifact@v8
         with:
           name: coverage
           path: .kiso-ci/
           run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ github.token }}
-      - name: temp
-        run: cat .kiso-ci/test-result.json
+
+      - name: checkout scripts
+        if: steps.pr.outputs.number != ''
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          sparse-checkout: .github/scripts
+
+      - name: setup node
+        if: steps.pr.outputs.number != ''
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: render coverage
+        if: steps.pr.outputs.number != ''
+        run: node .github/scripts/coverage-to-markdown.ts .kiso-ci/test-result.json "${{ github.event.workflow_run.head_sha }}" > body.md
+
+      - name: comment to PR
+        if: steps.pr.outputs.number != ''
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          repository: ${{ github.repository }}
+          issue-number: ${{ steps.pr.outputs.number }}
+          body-path: body.md
+
+      - name: delete source artifact
+        if: always()
+        continue-on-error: true
+        run: |
+          IDS=$(gh api "repos/${{ github.repository }}/actions/runs/${{ github.event.workflow_run.id }}/artifacts" --jq '.artifacts[] | select(.name=="coverage") | .id')
+          if [ -z "$IDS" ]; then
+            echo "no coverage artifact to delete"
+            exit 0
+          fi
+          for ID in $IDS; do
+            echo "deleting artifact $ID"
+            gh api -X DELETE "repos/${{ github.repository }}/actions/artifacts/$ID" || true
+          done
+        env:
+          GH_TOKEN: ${{ github.token }}

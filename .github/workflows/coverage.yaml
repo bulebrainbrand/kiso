@@ -20,3 +20,4 @@ jobs:
         with:
           name: coverage
           path: .kiso-ci/test-result.json
+          retention-days: 1

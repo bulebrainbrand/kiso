@@ -76,7 +76,7 @@ for (const [i, file] of testFiles.entries()) {
   const coverage = JSON.parse(
     readFileSync("./coverage/coverage-summary.json").toString(),
   );
-  const coverageResult = coverage[target];
+  const coverageResult = coverage[targetFiles[i]];
   if (coverageResult) {
     result[target] = {
       type: "success",

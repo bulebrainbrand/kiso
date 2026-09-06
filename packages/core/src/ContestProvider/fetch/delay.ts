@@ -1,5 +1,5 @@
 import type { FetchError, FetchOptions } from "@kiso/types";
-import { Err, Ok, type Result } from "neverthrow";
+import * as TE from "fp-ts/TaskEither";
 
 import { toAbortError } from "./policy.ts";
 
@@ -44,24 +44,22 @@ export type DelayConfig = {
   maxDelayMs: number | undefined;
 };
 
-export const waitForRetry = async (
+export const waitForRetry = (
   attempt: number,
   config: DelayConfig,
   url: string,
   userSignal: AbortSignal | null | undefined,
-): Promise<Result<void, FetchError>> => {
-  try {
-    await sleep(
-      computeDelay(
-        attempt,
-        config.initialDelayMs,
-        config.backoff,
-        config.maxDelayMs,
+): TE.TaskEither<FetchError, void> =>
+  TE.tryCatch(
+    () =>
+      sleep(
+        computeDelay(
+          attempt,
+          config.initialDelayMs,
+          config.backoff,
+          config.maxDelayMs,
+        ),
+        userSignal,
       ),
-      userSignal,
-    );
-    return new Ok(undefined);
-  } catch (reason) {
-    return new Err(toAbortError(url, reason));
-  }
-};
+    (reason) => toAbortError(url, reason),
+  );

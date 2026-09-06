@@ -1,5 +1,5 @@
 import type { FetchError, FetchFn } from "@kiso/types";
-import { Err, ResultAsync, type Result } from "neverthrow";
+import * as E from "fp-ts/Either";
 
 import { attemptOnce, discardBody } from "./attempt.ts";
 import { decide } from "./decide.ts";
@@ -33,7 +33,7 @@ export const kisoFetch: FetchFn = (input, init, options) => {
     timeoutMs,
   };
 
-  const run = async (): Promise<Result<Response, FetchError>> => {
+  const run = async (): Promise<E.Either<FetchError, Response>> => {
     for (let attempt = 0; ; attempt++) {
       const outcome = await attemptOnce(input, init, userSignal, timeoutMs);
       const decision = decide(outcome, policy, attempt);
@@ -46,14 +46,14 @@ export const kisoFetch: FetchFn = (input, init, options) => {
         { initialDelayMs, backoff, maxDelayMs },
         url,
         userSignal,
-      );
-      if (waited.isErr()) {
-        return new Err(waited.error);
+      )();
+      if (E.isLeft(waited)) {
+        return E.left(waited.left);
       }
     }
   };
 
-  return new ResultAsync(run());
+  return run;
 };
 
 export {

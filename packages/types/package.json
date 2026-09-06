@@ -36,6 +36,7 @@
     "prepublishOnly": "vp run build"
   },
   "dependencies": {
+    "fp-ts": "catalog:",
     "valibot": "catalog:"
   },
   "devDependencies": {

@@ -1,5 +1,4 @@
 import {
-  toAsync,
   type BaseContext,
   type Contest,
   type ContestProvider,
@@ -8,7 +7,8 @@ import {
   type UnexpectedError,
   type ValidationError,
 } from "@kiso/types";
-import { errAsync, fromPromise, okAsync, ResultAsync } from "neverthrow";
+import { pipe } from "fp-ts/function";
+import * as TE from "fp-ts/TaskEither";
 import { parse, type HTMLElement } from "node-html-parser";
 import * as v from "valibot";
 
@@ -28,42 +28,46 @@ export class YukiCoderService implements ContestProvider<
   isTargetUrl(
     ctx: BaseContext<{ API_KEY: string }>,
     url: string,
-  ): ResultAsync<boolean, ProviderError> {
-    return okAsync(url.startsWith("https://yukicoder.me"));
+  ): TE.TaskEither<ProviderError, boolean> {
+    return TE.right(url.startsWith("https://yukicoder.me"));
   }
   getContestDirectory(
     ctx: BaseContext<{ API_KEY: string }>,
     contest: Contest,
-  ): ResultAsync<string, ProviderError> {
-    return okAsync(`./${contest.id}`);
+  ): TE.TaskEither<ProviderError, string> {
+    return TE.right(`./${contest.id}`);
   }
   loginSchema = v.object({ API_KEY: v.string() });
   login(ctx: YukicoderCtx, credentials: YukicoderLoginOutput) {
-    return toAsync(ctx.storage.setItem("API_KEY", credentials.API_KEY));
+    return TE.fromEither(ctx.storage.setItem("API_KEY", credentials.API_KEY));
   }
   fetchContest(
     ctx: YukicoderCtx,
     contestId: string,
-  ): ResultAsync<Contest, ProviderError> {
-    return ctx
-      .fetch(`https://yukicoder.me/api/v1/contest/id/${contestId}`, undefined, {
-        maxRetries: 3,
-        timeoutMs: 1500,
-        backoff: "exponential",
-      })
-      .andThen((res) =>
-        fromPromise<unknown, UnexpectedError>(
-          res.json(),
+  ): TE.TaskEither<ProviderError, Contest> {
+    return pipe(
+      ctx.fetch(
+        `https://yukicoder.me/api/v1/contest/id/${contestId}`,
+        undefined,
+        {
+          maxRetries: 3,
+          timeoutMs: 1500,
+          backoff: "exponential",
+        },
+      ),
+      TE.chainW((res) =>
+        TE.tryCatch<UnexpectedError, unknown>(
+          () => res.json(),
           (error): UnexpectedError => ({
             type: "unexpected_error",
             message: error,
           }),
         ),
-      )
-      .map((body) => v.safeParse(yukicoderContestSchema, body))
-      .andThen((parsed): ResultAsync<Contest, ProviderError> => {
+      ),
+      TE.map((body) => v.safeParse(yukicoderContestSchema, body)),
+      TE.chainW((parsed): TE.TaskEither<ProviderError, Contest> => {
         if (!parsed.success) {
-          return errAsync({
+          return TE.left({
             type: "validation_error",
             issues: parsed.issues,
           } satisfies ValidationError);
@@ -73,38 +77,45 @@ export class YukiCoderService implements ContestProvider<
           (prob): prob is YukicoderContestProblem & { No: number } =>
             prob.No !== null,
         );
-        return ResultAsync.combine(
+        return pipe(
           problems.map((prob) => this.fetchTestcase(ctx, prob.No)),
-        ).map(
-          (allTestcases) =>
-            ({
-              id: contestId,
-              probrems: problems.map((probrem, i) => ({
-                id: String(probrem.ProblemId),
-                name: String(probrem.No),
-                testcases: allTestcases[i] ?? [],
-              })),
-            }) satisfies Contest,
+          TE.sequenceArray,
+          TE.map(
+            (allTestcases) =>
+              ({
+                id: contestId,
+                probrems: problems.map((probrem, i) => ({
+                  id: String(probrem.ProblemId),
+                  name: String(probrem.No),
+                  testcases: allTestcases[i] ?? [],
+                })),
+              }) satisfies Contest,
+          ),
         );
-      });
+      }),
+    );
   }
   private fetchTestcase(
     ctx: YukicoderCtx,
     problemNo: number,
-  ): ResultAsync<TestCase[], ProviderError> {
-    return ctx
-      .fetch(`https://yukicoder.me/problems/no/${problemNo}`, undefined, {
+  ): TE.TaskEither<ProviderError, TestCase[]> {
+    return pipe(
+      ctx.fetch(`https://yukicoder.me/problems/no/${problemNo}`, undefined, {
         maxRetries: 3,
         timeoutMs: 1500,
         backoff: "exponential",
-      })
-      .andThen((res) =>
-        fromPromise(res.text(), (error): UnexpectedError => ({
-          type: "unexpected_error",
-          message: error,
-        })),
-      )
-      .map((text) => this.extractTestCase(parse(text)));
+      }),
+      TE.chainW((res) =>
+        TE.tryCatch<UnexpectedError, string>(
+          () => res.text(),
+          (error): UnexpectedError => ({
+            type: "unexpected_error",
+            message: error,
+          }),
+        ),
+      ),
+      TE.map((text) => this.extractTestCase(parse(text))),
+    );
   }
   private extractTestCase(html: HTMLElement): TestCase[] {
     const sampleElements = html.querySelectorAll(".sample");
@@ -131,18 +142,18 @@ export class YukiCoderService implements ContestProvider<
     return testcases;
   }
   whoami(ctx: YukicoderCtx) {
-    return toAsync(
-      ctx.storage
-        .getItem("API_KEY")
-        .map((token) =>
-          token
-            ? `api token: ${
-                token.length <= 5
-                  ? "*".repeat(token.length)
-                  : token.slice(0, 5) + "*".repeat(token.length - 5)
-              }`
-            : "no api token",
-        ),
+    return pipe(
+      ctx.storage.getItem("API_KEY"),
+      TE.fromEither,
+      TE.map((token) =>
+        token
+          ? `api token: ${
+              token.length <= 5
+                ? "*".repeat(token.length)
+                : token.slice(0, 5) + "*".repeat(token.length - 5)
+            }`
+          : "no api token",
+      ),
     );
   }
 }

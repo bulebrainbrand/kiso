@@ -1,23 +1,27 @@
-import { Err, Ok, Result } from "neverthrow";
+import * as E from "fp-ts/Either";
+import { pipe } from "fp-ts/function";
+import * as TE from "fp-ts/TaskEither";
 import * as v from "valibot";
 
 import { ConfigSchema, type Config } from "./configSchema.ts";
 import { findConfig } from "./findConfig.ts";
 import { runConfig } from "./runConfig.ts";
 export const readConfig = (cwd: string) =>
-  findConfig(cwd)
-    .asyncAndThen((path) => runConfig(path))
-    .andThen(
+  pipe(
+    TE.fromEither(findConfig(cwd)),
+    TE.chainW((path) => runConfig(path)),
+    TE.chainEitherKW(
       (
         raw,
-      ): Result<
-        Config,
-        { type: "parse_error"; error: v.InferIssue<typeof ConfigSchema>[] }
+      ): E.Either<
+        { type: "parse_error"; error: v.InferIssue<typeof ConfigSchema>[] },
+        Config
       > => {
         const result = v.safeParse(ConfigSchema, raw);
         if (result.success) {
-          return new Ok(result.output);
+          return E.right(result.output);
         }
-        return new Err({ type: "parse_error" as const, error: result.issues });
+        return E.left({ type: "parse_error" as const, error: result.issues });
       },
-    );
+    ),
+  );

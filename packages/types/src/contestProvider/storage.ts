@@ -1,4 +1,4 @@
-import type { Result } from "neverthrow";
+import type * as E from "fp-ts/Either";
 
 export type JSONPrimitive = string | number | boolean | null;
 export type StorageType<
@@ -32,27 +32,27 @@ export type StorageError =
 export type StorageContext<T extends StorageType> = {
   getItem<K extends keyof T>(
     keyName: K,
-  ): Result<T[K] | null, FileReadError | JSONParseError | UnexpectedError>;
+  ): E.Either<FileReadError | JSONParseError | UnexpectedError, T[K] | null>;
   setItem<K extends keyof T>(
     keyName: K,
     keyValue: T[K],
-  ): Result<
-    void,
+  ): E.Either<
     | FileWriteError
     | FileReadError
     | JSONParseError
     | JSONStringifyError
-    | UnexpectedError
+    | UnexpectedError,
+    void
   >;
   removeItem<K extends keyof T>(
     keyName: K,
-  ): Result<
-    void,
+  ): E.Either<
     | FileWriteError
     | FileReadError
     | JSONParseError
     | JSONStringifyError
-    | UnexpectedError
+    | UnexpectedError,
+    void
   >;
-  clear(): Result<void, FileWriteError | UnexpectedError>;
+  clear(): E.Either<FileWriteError | UnexpectedError, void>;
 };

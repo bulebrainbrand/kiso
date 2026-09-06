@@ -1,6 +1,7 @@
 import type { BaseContext, Contest } from "@kiso/types";
 import type { FetchError } from "@kiso/types";
-import { errAsync, okAsync, type ResultAsync } from "neverthrow";
+import * as E from "fp-ts/Either";
+import * as TE from "fp-ts/TaskEither";
 import { describe, expect, it } from "vite-plus/test";
 
 import { YukiCoderService } from "./service.ts";
@@ -31,7 +32,7 @@ const problemHtml = (samples: [string, string, string][]) =>
     .join("")}</body></html>`;
 
 const makeCtx = (
-  handler: (url: string) => ResultAsync<Response, FetchError>,
+  handler: (url: string) => TE.TaskEither<FetchError, Response>,
 ): YukicoderCtx =>
   ({
     fetch: ((input: string | URL | Request) => {
@@ -48,16 +49,14 @@ const makeCtx = (
   }) as YukicoderCtx;
 
 const okJson = (body: unknown) =>
-  okAsync<Response, FetchError>(
+  TE.right(
     new Response(JSON.stringify(body), {
       headers: { "content-type": "application/json" },
     }),
   );
 
 const okHtml = (html: string) =>
-  okAsync<Response, FetchError>(
-    new Response(html, { headers: { "content-type": "text/html" } }),
-  );
+  TE.right(new Response(html, { headers: { "content-type": "text/html" } }));
 
 describe("YukiCoderService.fetchContest", () => {
   it("コンテストと各問題のテストケースを取得してContestを組み立てる", async () => {
@@ -77,13 +76,13 @@ describe("YukiCoderService.fetchContest", () => {
           ]),
         );
       }
-      return errAsync({ type: "not_found", url });
+      return TE.left({ type: "not_found", url });
     });
 
-    const result = await service.fetchContest(ctx, "1");
-    expect(result.isOk()).toBe(true);
-    if (result.isErr()) return;
-    const contest: Contest = result.value;
+    const result = await service.fetchContest(ctx, "1")();
+    expect(E.isRight(result)).toBe(true);
+    if (E.isLeft(result)) return;
+    const contest: Contest = result.right;
     expect(contest.id).toBe("1");
     expect(contest.probrems.map((p) => p.id)).toStrictEqual(["101", "102"]);
     expect(contest.probrems.map((p) => p.name)).toStrictEqual(["1", "2"]);
@@ -100,10 +99,10 @@ describe("YukiCoderService.fetchContest", () => {
     const service = new YukiCoderService("yukicoder");
     const ctx = makeCtx(() => okJson({ unexpected: true }));
 
-    const result = await service.fetchContest(ctx, "1");
-    expect(result.isErr()).toBe(true);
-    if (result.isOk()) return;
-    expect(result.error.type).toBe("validation_error");
+    const result = await service.fetchContest(ctx, "1")();
+    expect(E.isLeft(result)).toBe(true);
+    if (E.isRight(result)) return;
+    expect(result.left.type).toBe("validation_error");
   });
 
   it("1問でもテストケース取得に失敗したら全体をエラーにする", async () => {
@@ -115,13 +114,13 @@ describe("YukiCoderService.fetchContest", () => {
       if (url === "https://yukicoder.me/problems/no/1") {
         return okHtml(problemHtml([["sample1", "1\n", "1\n"]]));
       }
-      return errAsync({ type: "not_found", url });
+      return TE.left({ type: "not_found", url });
     });
 
-    const result = await service.fetchContest(ctx, "1");
-    expect(result.isErr()).toBe(true);
-    if (result.isOk()) return;
-    expect(result.error).toStrictEqual({
+    const result = await service.fetchContest(ctx, "1")();
+    expect(E.isLeft(result)).toBe(true);
+    if (E.isRight(result)) return;
+    expect(result.left).toStrictEqual({
       type: "not_found",
       url: "https://yukicoder.me/problems/no/2",
     });
@@ -144,10 +143,10 @@ describe("YukiCoderService.fetchContest", () => {
       );
     });
 
-    const result = await service.fetchContest(ctx, "1");
-    expect(result.isOk()).toBe(true);
-    if (result.isErr()) return;
-    expect(result.value.probrems[0]?.testcases).toStrictEqual([
+    const result = await service.fetchContest(ctx, "1")();
+    expect(E.isRight(result)).toBe(true);
+    if (E.isLeft(result)) return;
+    expect(result.right.probrems[0]?.testcases).toStrictEqual([
       { name: "ok", input: "in", output: "out" },
     ]);
   });
@@ -169,14 +168,14 @@ describe("YukiCoderService.fetchContest", () => {
       if (url === "https://yukicoder.me/problems/no/1") {
         return okHtml(problemHtml([["sample1", "1\n", "1\n"]]));
       }
-      return errAsync({ type: "not_found", url });
+      return TE.left({ type: "not_found", url });
     });
 
-    const result = await service.fetchContest(ctx, "1");
-    expect(result.isOk()).toBe(true);
-    if (result.isErr()) return;
-    expect(result.value.probrems.map((p) => p.id)).toStrictEqual(["101"]);
-    expect(result.value.probrems.map((p) => p.name)).toStrictEqual(["1"]);
+    const result = await service.fetchContest(ctx, "1")();
+    expect(E.isRight(result)).toBe(true);
+    if (E.isLeft(result)) return;
+    expect(result.right.probrems.map((p) => p.id)).toStrictEqual(["101"]);
+    expect(result.right.probrems.map((p) => p.name)).toStrictEqual(["1"]);
     expect(requestedUrls).not.toContain(
       "https://yukicoder.me/problems/no/null",
     );
@@ -186,31 +185,31 @@ describe("YukiCoderService.fetchContest", () => {
 describe("YukiCoderService.isTargetUrl", () => {
   it("yukicoder.meのURLならtrueを返す", async () => {
     const service = new YukiCoderService("yukicoder");
-    const ctx = makeCtx(() => errAsync({ type: "not_found", url: "" }));
+    const ctx = makeCtx(() => TE.left({ type: "not_found", url: "" }));
     for (const url of [
       "https://yukicoder.me",
       "https://yukicoder.me/contests/100",
       "https://yukicoder.me/problems/no/1",
     ]) {
-      const result = await service.isTargetUrl(ctx, url);
-      expect(result.isOk()).toBe(true);
-      if (result.isErr()) continue;
-      expect(result.value).toBe(true);
+      const result = await service.isTargetUrl(ctx, url)();
+      expect(E.isRight(result)).toBe(true);
+      if (E.isLeft(result)) continue;
+      expect(result.right).toBe(true);
     }
   });
 
   it("yukicoder.me以外のURLならfalseを返す", async () => {
     const service = new YukiCoderService("yukicoder");
-    const ctx = makeCtx(() => errAsync({ type: "not_found", url: "" }));
+    const ctx = makeCtx(() => TE.left({ type: "not_found", url: "" }));
     for (const url of [
       "https://atcoder.jp/contests/abc001",
       "http://yukicoder.me/problems/no/1",
       "",
     ]) {
-      const result = await service.isTargetUrl(ctx, url);
-      expect(result.isOk()).toBe(true);
-      if (result.isErr()) continue;
-      expect(result.value).toBe(false);
+      const result = await service.isTargetUrl(ctx, url)();
+      expect(E.isRight(result)).toBe(true);
+      if (E.isLeft(result)) continue;
+      expect(result.right).toBe(false);
     }
   });
 });
@@ -218,12 +217,12 @@ describe("YukiCoderService.isTargetUrl", () => {
 describe("YukiCoderService.getContestDirectory", () => {
   it("コンテストIDからディレクトリパスを返す", async () => {
     const service = new YukiCoderService("yukicoder");
-    const ctx = makeCtx(() => errAsync({ type: "not_found", url: "" }));
+    const ctx = makeCtx(() => TE.left({ type: "not_found", url: "" }));
     const contest: Contest = { id: "123", probrems: [] };
 
-    const result = await service.getContestDirectory(ctx, contest);
-    expect(result.isOk()).toBe(true);
-    if (result.isErr()) return;
-    expect(result.value).toBe("./123");
+    const result = await service.getContestDirectory(ctx, contest)();
+    expect(E.isRight(result)).toBe(true);
+    if (E.isLeft(result)) return;
+    expect(result.right).toBe("./123");
   });
 });

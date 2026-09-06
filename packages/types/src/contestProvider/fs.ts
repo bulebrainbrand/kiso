@@ -1,4 +1,4 @@
-import type { Result } from "neverthrow";
+import type * as E from "fp-ts/Either";
 
 import type {
   FileReadError,
@@ -15,9 +15,9 @@ export type FsStat = {
 
 export type FsContext = {
   exists(path: string): boolean;
-  stat(path: string): Result<FsStat, FsError>;
-  readFile(path: string): Result<string, FsError>;
-  writeFile(path: string, content: string): Result<void, FsError>;
-  mkdir(path: string): Result<void, FsError>;
-  rm(path: string): Result<void, FsError>;
+  stat(path: string): E.Either<FsError, FsStat>;
+  readFile(path: string): E.Either<FsError, string>;
+  writeFile(path: string, content: string): E.Either<FsError, void>;
+  mkdir(path: string): E.Either<FsError, void>;
+  rm(path: string): E.Either<FsError, void>;
 };

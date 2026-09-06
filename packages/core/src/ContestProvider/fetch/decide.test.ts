@@ -1,4 +1,4 @@
-import { Err, Ok } from "neverthrow";
+import * as E from "fp-ts/Either";
 import { describe, expect, it } from "vite-plus/test";
 
 import type { AttemptOutcome } from "./attempt.ts";
@@ -20,7 +20,7 @@ describe("decide", () => {
     const outcome: AttemptOutcome = { type: "responded", response };
     expect(decide(outcome, basePolicy, 0)).toEqual({
       type: "return",
-      result: new Ok(response),
+      result: E.right(response),
     });
   });
 
@@ -29,7 +29,7 @@ describe("decide", () => {
     const outcome: AttemptOutcome = { type: "responded", response };
     expect(decide(outcome, basePolicy, 0)).toEqual({
       type: "return",
-      result: new Err({ type: "not_found", url: "https://example.com/" }),
+      result: E.left({ type: "not_found", url: "https://example.com/" }),
       discard: response,
     });
   });
@@ -54,7 +54,7 @@ describe("decide", () => {
     };
     expect(decide(exhausted, basePolicy, 1)).toEqual({
       type: "return",
-      result: new Err({ type: "fetch_error", status: 500, error: "ISE" }),
+      result: E.left({ type: "fetch_error", status: 500, error: "ISE" }),
       discard: exhaustedResponse,
     });
   });
@@ -70,7 +70,7 @@ describe("decide", () => {
     };
     expect(decide(offTarget, basePolicy, 0)).toEqual({
       type: "return",
-      result: new Err({ type: "fetch_error", status: 400, error: "Bad" }),
+      result: E.left({ type: "fetch_error", status: 400, error: "Bad" }),
       discard: offTargetResponse,
     });
   });
@@ -88,7 +88,7 @@ describe("decide", () => {
       decide(nonIdempotent, { ...basePolicy, methodRetryable: false }, 0),
     ).toEqual({
       type: "return",
-      result: new Err({ type: "fetch_error", status: 500, error: "ISE" }),
+      result: E.left({ type: "fetch_error", status: 500, error: "ISE" }),
       discard: nonIdempotentResponse,
     });
   });
@@ -105,7 +105,7 @@ describe("decide", () => {
     expect(decide(outcome, basePolicy, 0)).toEqual({ type: "retry" });
     expect(decide(outcome, basePolicy, 1)).toEqual({
       type: "return",
-      result: new Err({
+      result: E.left({
         type: "network_error",
         url: "https://example.com/",
         message: "dns fail",
@@ -125,7 +125,7 @@ describe("decide", () => {
     expect(decide(outcome, basePolicy, 0)).toEqual({ type: "retry" });
     expect(decide(outcome, { ...basePolicy, timeoutMs: 10 }, 1)).toEqual({
       type: "return",
-      result: new Err({
+      result: E.left({
         type: "timeout_error",
         url: "https://example.com/",
         timeoutMs: 10,
@@ -143,7 +143,7 @@ describe("decide", () => {
     };
     expect(decide(outcome, basePolicy, 1)).toEqual({
       type: "return",
-      result: new Err({
+      result: E.left({
         type: "timeout_error",
         url: "https://example.com/",
         timeoutMs: 0,
@@ -161,7 +161,7 @@ describe("decide", () => {
     };
     expect(decide(outcome, basePolicy, 1)).toEqual({
       type: "return",
-      result: new Err({
+      result: E.left({
         type: "network_error",
         url: "https://example.com/",
         message: "boom",
@@ -181,7 +181,7 @@ describe("decide", () => {
     };
     expect(decide(aborted, basePolicy, 0)).toEqual({
       type: "return",
-      result: new Err({
+      result: E.left({
         type: "abort_error",
         url: "https://example.com/",
         reason,
@@ -190,7 +190,7 @@ describe("decide", () => {
     const preAborted: AttemptOutcome = { type: "preAborted", reason };
     expect(decide(preAborted, basePolicy, 0)).toEqual({
       type: "return",
-      result: new Err({
+      result: E.left({
         type: "abort_error",
         url: "https://example.com/",
         reason,
@@ -204,7 +204,7 @@ describe("decide", () => {
     expect(decide(outcome, { ...basePolicy, bodyRetryable: false }, 0)).toEqual(
       {
         type: "return",
-        result: new Err({ type: "fetch_error", status: 500, error: "ISE" }),
+        result: E.left({ type: "fetch_error", status: 500, error: "ISE" }),
         discard: response,
       },
     );
@@ -222,7 +222,7 @@ describe("decide", () => {
     expect(decide(outcome, { ...basePolicy, bodyRetryable: false }, 0)).toEqual(
       {
         type: "return",
-        result: new Err({
+        result: E.left({
           type: "network_error",
           url: "https://example.com/",
           message: "fetch failed",

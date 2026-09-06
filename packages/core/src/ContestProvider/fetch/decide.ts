@@ -1,5 +1,5 @@
 import type { FetchError } from "@kiso/types";
-import { Err, Ok, type Result } from "neverthrow";
+import * as E from "fp-ts/Either";
 
 import type { AttemptOutcome } from "./attempt.ts";
 import { isRetryableStatus, toAbortError, type RetryPolicy } from "./policy.ts";
@@ -8,7 +8,7 @@ export type Decision =
   | { type: "retry"; discard?: Response }
   | {
       type: "return";
-      result: Result<Response, FetchError>;
+      result: E.Either<FetchError, Response>;
       discard?: Response;
     };
 
@@ -25,7 +25,7 @@ export const decide = (
     case "preAborted":
       return {
         type: "return",
-        result: new Err(toAbortError(policy.url, outcome.reason)),
+        result: E.left(toAbortError(policy.url, outcome.reason)),
       };
     case "thrown": {
       if (outcome.timedOut) {
@@ -33,7 +33,7 @@ export const decide = (
           ? { type: "retry" }
           : {
               type: "return",
-              result: new Err({
+              result: E.left({
                 type: "timeout_error",
                 url: policy.url,
                 timeoutMs: policy.timeoutMs ?? 0,
@@ -43,7 +43,7 @@ export const decide = (
       if (outcome.aborted) {
         return {
           type: "return",
-          result: new Err(toAbortError(policy.url, outcome.abortReason)),
+          result: E.left(toAbortError(policy.url, outcome.abortReason)),
         };
       }
       const message =
@@ -54,7 +54,7 @@ export const decide = (
         ? { type: "retry" }
         : {
             type: "return",
-            result: new Err({
+            result: E.left({
               type: "network_error",
               url: policy.url,
               message,
@@ -65,12 +65,12 @@ export const decide = (
     case "responded": {
       const { response } = outcome;
       if (response.ok) {
-        return { type: "return", result: new Ok(response) };
+        return { type: "return", result: E.right(response) };
       }
       if (response.status === 404) {
         return {
           type: "return",
-          result: new Err({ type: "not_found", url: policy.url }),
+          result: E.left({ type: "not_found", url: policy.url }),
           discard: response,
         };
       }
@@ -79,7 +79,7 @@ export const decide = (
       }
       return {
         type: "return",
-        result: new Err({
+        result: E.left({
           type: "fetch_error",
           status: response.status,
           error: response.statusText,

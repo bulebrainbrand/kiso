@@ -1,3 +1,4 @@
+import * as E from "fp-ts/Either";
 import { describe, expect, it } from "vite-plus/test";
 
 import {
@@ -86,8 +87,8 @@ describe("waitForRetry", () => {
       config,
       "https://example.com/",
       undefined,
-    );
-    expect(result.isOk()).toBe(true);
+    )();
+    expect(E.isRight(result)).toBe(true);
   });
 
   it("待機中の abort で abort_error の Err を返す", async () => {
@@ -106,9 +107,9 @@ describe("waitForRetry", () => {
       waiting,
       "https://example.com/",
       controller.signal,
-    );
-    if (result.isErr()) {
-      expect(result.error).toEqual({
+    )();
+    if (E.isLeft(result)) {
+      expect(result.left).toEqual({
         type: "abort_error",
         url: "https://example.com/",
         reason,

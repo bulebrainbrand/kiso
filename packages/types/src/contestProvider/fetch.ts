@@ -1,4 +1,4 @@
-import type { ResultAsync } from "neverthrow";
+import type * as TE from "fp-ts/TaskEither";
 
 export type FetchBackoff = "fixed" | "exponential";
 
@@ -22,4 +22,4 @@ export type FetchFn = (
   input: string | URL | Request,
   init?: RequestInit,
   options?: FetchOptions,
-) => ResultAsync<Response, FetchError>;
+) => TE.TaskEither<FetchError, Response>;

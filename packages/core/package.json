@@ -31,8 +31,8 @@
     "prepublishOnly": "vp run build"
   },
   "dependencies": {
+    "fp-ts": "catalog:",
     "jiti": "catalog:",
-    "neverthrow": "catalog:",
     "valibot": "catalog:"
   },
   "devDependencies": {

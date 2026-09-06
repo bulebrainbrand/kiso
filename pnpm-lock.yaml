@@ -211,12 +211,12 @@ catalogs:
     '@vitest/coverage-v8':
       specifier: 4.1.11
       version: 4.1.11
+    fp-ts:
+      specifier: ^2.16.11
+      version: 2.16.11
     jiti:
       specifier: ^2.7.0
       version: 2.7.0
-    neverthrow:
-      specifier: ^8.2.0
-      version: 8.2.0
     node-html-parser:
       specifier: ^9.0.3
       version: 9.0.3
@@ -249,12 +249,12 @@ importers:
 
   packages/core:
     dependencies:
+      fp-ts:
+        specifier: 'catalog:'
+        version: 2.16.11
       jiti:
         specifier: 'catalog:'
         version: 2.7.0
-      neverthrow:
-        specifier: 'catalog:'
-        version: 8.2.0
       valibot:
         specifier: 'catalog:'
         version: 1.4.2(typescript@7.0.2)
@@ -274,9 +274,9 @@ importers:
 
   packages/prov-yukicoder:
     dependencies:
-      neverthrow:
+      fp-ts:
         specifier: 'catalog:'
-        version: 8.2.0
+        version: 2.16.11
       node-html-parser:
         specifier: 'catalog:'
         version: 9.0.3
@@ -299,9 +299,6 @@ importers:
 
   packages/types:
     dependencies:
-      neverthrow:
-        specifier: 'catalog:'
-        version: 8.2.0
       valibot:
         specifier: 'catalog:'
         version: 1.4.2(typescript@7.0.2)
@@ -659,12 +656,6 @@ packages:
 
   '@polka/url@1.0.0-next.29':
     resolution: {integrity: sha512-wwQAWhWSuHaag8c4q/KN/vCoeOJYshAIvMQwD4GpSb3OiZklFfvAgmj0VCBBImRpuF/aFgIRzllXlVX93Jevww==}
-
-  '@rollup/rollup-linux-x64-gnu@4.63.1':
-    resolution: {integrity: sha512-gfI5T24WLLuFfSKw7Go/zDXjAAV0fny0swTaDv+WjK7vqcw4cRhFfdsyKL1n+ukI+ooBxn3bVQnyrn06WpI50w==}
-    cpu: [x64]
-    os: [linux]
-    libc: [glibc]
 
   '@standard-schema/spec@1.1.0':
     resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
@@ -1185,6 +1176,9 @@ packages:
       picomatch:
         optional: true
 
+  fp-ts@2.16.11:
+    resolution: {integrity: sha512-LaI+KaX2NFkfn1ZGHoKCmcfv7yrZsC3b8NtWsTVQeHkq4F27vI5igUuO53sxqDEa2gNQMHFPmpojDw/1zmUK7w==}
+
   fsevents@2.3.3:
     resolution: {integrity: sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw==}
     engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
@@ -1315,10 +1309,6 @@ packages:
     resolution: {integrity: sha512-DTg4MJbGMWkfi6VZFdNt2/caMbQy4Ou+Op/hJQvGEWcnVfoA1QA+xzRKAzw9jD6+GVOOeYr/mIcuDSdug6F6+w==}
     engines: {node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1}
     hasBin: true
-
-  neverthrow@8.2.0:
-    resolution: {integrity: sha512-kOCT/1MCPAxY5iUV3wytNFUMUolzuwd/VF/1KCx7kf6CutrOsTie+84zTGTpgQycjvfLdBBdvBvFLqFD2c0wkQ==}
-    engines: {node: '>=18'}
 
   node-html-parser@9.0.3:
     resolution: {integrity: sha512-iaQ9rokcYNp99IY0h82q04Wtc27SObRT+OEytdJh0bFv2IN0fypnU63KUNVavkPSiwsmIELG1eUenajGhzrvpg==}
@@ -1710,9 +1700,6 @@ snapshots:
   '@oxlint/plugins@1.79.0': {}
 
   '@polka/url@1.0.0-next.29': {}
-
-  '@rollup/rollup-linux-x64-gnu@4.63.1':
-    optional: true
 
   '@standard-schema/spec@1.1.0': {}
 
@@ -2161,6 +2148,8 @@ snapshots:
     optionalDependencies:
       picomatch: 4.0.7
 
+  fp-ts@2.16.11: {}
+
   fsevents@2.3.3:
     optional: true
 
@@ -2255,10 +2244,6 @@ snapshots:
   mrmime@2.0.1: {}
 
   nanoid@3.3.18: {}
-
-  neverthrow@8.2.0:
-    optionalDependencies:
-      '@rollup/rollup-linux-x64-gnu': 4.63.1
 
   node-html-parser@9.0.3:
     dependencies:

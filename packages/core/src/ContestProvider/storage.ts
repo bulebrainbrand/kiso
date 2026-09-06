@@ -14,34 +14,87 @@ import type {
 import * as E from "fp-ts/Either";
 import { pipe } from "fp-ts/function";
 import * as v from "valibot";
+
+type StoredObject = Partial<Record<string, JSONPrimitive>>;
+
+const toUnexpectedError = (error: unknown): UnexpectedError =>
+  error instanceof Error
+    ? { type: "unexpected_error", message: String(error) }
+    : { type: "unexpected_error", message: JSON.stringify(error) };
+
+const toReadError = (error: unknown): FileReadError | UnexpectedError => {
+  if (
+    error instanceof Error
+    && "code" in error
+    && typeof error.code === "string"
+  ) {
+    // fs read error (ENOENT, EACCES, EISDIR, ...)
+    return { type: "read_error", message: error.message, code: error.code };
+  }
+  return toUnexpectedError(error);
+};
+
+const toWriteError = (error: unknown): FileWriteError | UnexpectedError => {
+  if (
+    error instanceof Error
+    && "code" in error
+    && typeof error.code === "string"
+  ) {
+    return { type: "write_error", message: error.message, code: error.code };
+  }
+  return toUnexpectedError(error);
+};
+
+const toStringifyError = (
+  error: unknown,
+): JSONStringifyError | UnexpectedError => {
+  if (error instanceof Error) {
+    return { type: "stringify_error", message: error.message };
+  }
+  return toUnexpectedError(error);
+};
+
+const toParseError = (error: unknown): JSONParseError | UnexpectedError => {
+  if (error instanceof SyntaxError) {
+    return { type: "parse_error", message: String(error) };
+  }
+  return toUnexpectedError(error);
+};
+
+const isMissingReadError = (
+  error: FileReadError | JSONParseError | UnexpectedError,
+): boolean => error.type === "read_error" && error.code === "ENOENT";
+
+const isMissingWriteError = (
+  error: FileWriteError | UnexpectedError,
+): boolean => error.type === "write_error" && error.code === "ENOENT";
+
+// ENOENTによる読み欠損だけフォールバック値に倒し、それ以外はLeftのまま伝播する
+const orMissingReadTo =
+  <A>(fallback: A) =>
+  (
+    error: FileReadError | JSONParseError | UnexpectedError,
+  ): E.Either<FileReadError | JSONParseError | UnexpectedError, A> =>
+    isMissingReadError(error) ? E.right(fallback) : E.left(error);
+
 export class Storage<S extends StorageType> implements StorageContext<S> {
   constructor(
     private readonly name: string,
     private readonly dir: string,
   ) {
     const storagePath = path.join(dir, this.createFileName());
-    if (fs.existsSync(storagePath)) {
-      if (fs.statSync(storagePath).isFile()) {
-      } else {
-        throw new TypeError(
-          `${storagePath} is not file. can't parse directory`,
-        );
-      }
+    if (fs.existsSync(storagePath) && fs.statSync(storagePath).isDirectory()) {
+      throw new TypeError(`${storagePath} is not file. can't parse directory`);
     }
   }
   getItem<K extends keyof S>(
     keyName: K,
   ): E.Either<FileReadError | JSONParseError | UnexpectedError, S[K] | null> {
-    const result = this.readJSON();
-    if (E.isLeft(result)) {
-      const error = result.left;
-      if (error.type === "read_error" && error.code === "ENOENT") {
-        return E.right(null);
-      }
-      return E.left(error);
-    }
-    const value = result.right[String(keyName)] ?? null;
-    return E.right(value as S[K] | null);
+    return pipe(
+      this.readJSON(),
+      E.orElse(orMissingReadTo<StoredObject>({})),
+      E.map((obj) => (obj[String(keyName)] ?? null) as S[K] | null),
+    );
   }
   setItem<K extends keyof S>(
     keyName: K,
@@ -54,20 +107,14 @@ export class Storage<S extends StorageType> implements StorageContext<S> {
     | UnexpectedError,
     void
   > {
-    const result = this.readJSON();
-    let obj: Partial<Record<string, JSONPrimitive>>;
-    if (E.isLeft(result)) {
-      const error = result.left;
-      if (error.type === "read_error" && error.code === "ENOENT") {
-        obj = {};
-      } else {
-        return E.left(error);
-      }
-    } else {
-      obj = result.right;
-    }
-    obj[String(keyName)] = keyValue;
-    return this.writeJSON(obj);
+    return pipe(
+      this.readJSON(),
+      E.orElse(orMissingReadTo<StoredObject>({})),
+      E.chainW((obj) => {
+        obj[String(keyName)] = keyValue;
+        return this.writeJSON(obj);
+      }),
+    );
   }
   removeItem<K extends keyof S>(
     keyName: K,
@@ -79,48 +126,31 @@ export class Storage<S extends StorageType> implements StorageContext<S> {
     | UnexpectedError,
     void
   > {
-    const result = this.readJSON();
-    if (E.isLeft(result)) {
-      const error = result.left;
-      if (error.type === "read_error" && error.code === "ENOENT") {
-        return E.right(undefined);
-      }
-      return E.left(error);
-    }
-    const obj = result.right;
-    if (!(String(keyName) in obj)) {
-      return E.right(undefined);
-    }
-    delete obj[String(keyName)];
-    return this.writeJSON(obj);
+    return pipe(
+      this.readJSON(),
+      E.orElse(orMissingReadTo<StoredObject>({})),
+      E.chainW((obj) => {
+        if (!(String(keyName) in obj)) {
+          return E.right(undefined);
+        }
+        delete obj[String(keyName)];
+        return this.writeJSON(obj);
+      }),
+    );
   }
   clear(): E.Either<FileWriteError | UnexpectedError, void> {
     const storagePath = this.createStorageFilePath();
-    try {
-      if (!fs.existsSync(storagePath)) {
-        return E.right(undefined);
-      }
-      fs.rmSync(storagePath);
+    if (!fs.existsSync(storagePath)) {
       return E.right(undefined);
-    } catch (error) {
-      if (error instanceof Error) {
-        if ("code" in error && typeof error.code === "string") {
-          if (error.code === "ENOENT") {
-            return E.right(undefined);
-          }
-          return E.left({
-            type: "write_error",
-            message: error.message,
-            code: error.code,
-          });
-        }
-        return E.left({ type: "unexpected_error", message: String(error) });
-      }
-      return E.left({
-        type: "unexpected_error",
-        message: JSON.stringify(error),
-      });
     }
+    return pipe(
+      E.tryCatch(() => {
+        fs.rmSync(storagePath);
+      }, toWriteError),
+      E.orElse((error) =>
+        isMissingWriteError(error) ? E.right(undefined) : E.left(error),
+      ),
+    );
   }
 
   private createFileName() {
@@ -131,7 +161,7 @@ export class Storage<S extends StorageType> implements StorageContext<S> {
   }
   private readJSON(): E.Either<
     FileReadError | JSONParseError | UnexpectedError,
-    Partial<Record<string, JSONPrimitive>>
+    StoredObject
   > {
     return pipe(
       this.readFile(),
@@ -140,28 +170,13 @@ export class Storage<S extends StorageType> implements StorageContext<S> {
     );
   }
   private readFile(): E.Either<FileReadError | UnexpectedError, string> {
-    try {
-      return E.right(fs.readFileSync(this.createStorageFilePath()).toString());
-    } catch (error) {
-      if (error instanceof Error) {
-        if ("code" in error && typeof error.code === "string") {
-          // fs read error (ENOENT, EACCES, EISDIR, ...)
-          return E.left({
-            type: "read_error",
-            message: error.message,
-            code: error.code,
-          });
-        }
-        return E.left({ type: "unexpected_error", message: String(error) });
-      }
-      return E.left({
-        type: "unexpected_error",
-        message: JSON.stringify(error),
-      });
-    }
+    return E.tryCatch(
+      () => fs.readFileSync(this.createStorageFilePath()).toString(),
+      toReadError,
+    );
   }
   private writeJSON(
-    obj: Partial<Record<string, JSONPrimitive>>,
+    obj: StoredObject,
   ): E.Either<FileWriteError | JSONStringifyError | UnexpectedError, void> {
     return pipe(
       this.stringifyJSON(obj),
@@ -169,62 +184,29 @@ export class Storage<S extends StorageType> implements StorageContext<S> {
     );
   }
   private stringifyJSON(
-    obj: Partial<Record<string, JSONPrimitive>>,
+    obj: StoredObject,
   ): E.Either<JSONStringifyError | UnexpectedError, string> {
-    try {
-      return E.right(JSON.stringify(obj));
-    } catch (error) {
-      if (error instanceof Error) {
-        return E.left({ type: "stringify_error", message: error.message });
-      }
-      return E.left({
-        type: "unexpected_error",
-        message: JSON.stringify(error),
-      });
-    }
+    return E.tryCatch(() => JSON.stringify(obj), toStringifyError);
   }
   private writeFile(
     content: string,
   ): E.Either<FileWriteError | UnexpectedError, void> {
-    try {
+    return E.tryCatch(() => {
       fs.mkdirSync(this.dir, { recursive: true });
       fs.writeFileSync(this.createStorageFilePath(), content);
-      return E.right(undefined);
-    } catch (error) {
-      if (error instanceof Error) {
-        if ("code" in error && typeof error.code === "string") {
-          return E.left({
-            type: "write_error",
-            message: error.message,
-            code: error.code,
-          });
-        }
-        return E.left({ type: "unexpected_error", message: String(error) });
-      }
-      return E.left({
-        type: "unexpected_error",
-        message: JSON.stringify(error),
-      });
-    }
+    }, toWriteError);
   }
   private parseJSON(
     str: string,
   ): E.Either<JSONParseError | UnexpectedError, unknown> {
-    try {
-      return E.right(JSON.parse(str));
-    } catch (error) {
-      if (error instanceof SyntaxError) {
-        return E.left({ type: "parse_error", message: String(error) });
-      }
-      return E.left({
-        type: "unexpected_error",
-        message: JSON.stringify(error),
-      });
-    }
+    return E.tryCatch<JSONParseError | UnexpectedError, unknown>(
+      () => JSON.parse(str) as unknown,
+      toParseError,
+    );
   }
   private parseUnknownJSON(
     obj: unknown,
-  ): E.Either<JSONParseError, Partial<Record<string, JSONPrimitive>>> {
+  ): E.Either<JSONParseError, StoredObject> {
     const schema = v.record(
       v.string(),
       v.union([v.string(), v.number(), v.boolean(), v.null()]),

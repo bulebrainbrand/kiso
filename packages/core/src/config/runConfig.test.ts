@@ -2,6 +2,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
+import * as E from "fp-ts/Either";
 import { afterEach, describe, expect, it } from "vite-plus/test";
 
 import { KISO_CONFIG_FILE_NAME } from "../constants.ts";
@@ -34,10 +35,10 @@ describe("runConfig", () => {
       makeTempRoot(),
       'export default { foo: "bar" };\n',
     );
-    const result = await runConfig(path);
-    expect(result.isOk()).toBe(true);
-    if (result.isOk()) {
-      expect(result.value).toEqual({ default: { foo: "bar" } });
+    const result = await runConfig(path)();
+    expect(E.isRight(result)).toBe(true);
+    if (E.isRight(result)) {
+      expect(result.right).toEqual({ default: { foo: "bar" } });
     }
   });
 
@@ -46,46 +47,46 @@ describe("runConfig", () => {
       makeTempRoot(),
       "const x: number = 1;\nexport default { x };\n",
     );
-    const result = await runConfig(path);
-    expect(result.isOk()).toBe(true);
-    if (result.isOk()) {
-      expect(result.value).toEqual({ default: { x: 1 } });
+    const result = await runConfig(path)();
+    expect(E.isRight(result)).toBe(true);
+    if (E.isRight(result)) {
+      expect(result.right).toEqual({ default: { x: 1 } });
     }
   });
 
   it("プリミティブのdefault exportを読み込める", async () => {
     const path = writeConfig(makeTempRoot(), "export default 42;\n");
-    const result = await runConfig(path);
-    expect(result.isOk()).toBe(true);
-    if (result.isOk()) {
-      expect(result.value).toEqual({ default: 42 });
+    const result = await runConfig(path)();
+    expect(E.isRight(result)).toBe(true);
+    if (E.isRight(result)) {
+      expect(result.right).toEqual({ default: 42 });
     }
   });
 
   it("存在しないパスの場合はjiti_errorを返す", async () => {
     const path = join(makeTempRoot(), KISO_CONFIG_FILE_NAME);
-    const result = await runConfig(path);
-    expect(result.isErr()).toBe(true);
-    if (result.isErr()) {
-      expect(result.error.type).toBe("jiti_error");
+    const result = await runConfig(path)();
+    expect(E.isLeft(result)).toBe(true);
+    if (E.isLeft(result)) {
+      expect(result.left.type).toBe("jiti_error");
     }
   });
 
   it("シンタックスエラーの場合はjiti_errorを返す", async () => {
     const path = writeConfig(makeTempRoot(), "export default {;\n");
-    const result = await runConfig(path);
-    expect(result.isErr()).toBe(true);
-    if (result.isErr()) {
-      expect(result.error.type).toBe("jiti_error");
+    const result = await runConfig(path)();
+    expect(E.isLeft(result)).toBe(true);
+    if (E.isLeft(result)) {
+      expect(result.left.type).toBe("jiti_error");
     }
   });
 
   it("評価時にthrowする場合はjiti_errorを返す", async () => {
     const path = writeConfig(makeTempRoot(), 'throw new Error("boom");\n');
-    const result = await runConfig(path);
-    expect(result.isErr()).toBe(true);
-    if (result.isErr()) {
-      expect(result.error.type).toBe("jiti_error");
+    const result = await runConfig(path)();
+    expect(E.isLeft(result)).toBe(true);
+    if (E.isLeft(result)) {
+      expect(result.left.type).toBe("jiti_error");
     }
   });
 });

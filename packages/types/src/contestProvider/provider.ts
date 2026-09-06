@@ -1,4 +1,4 @@
-import type { ResultAsync } from "neverthrow";
+import type * as TE from "fp-ts/TaskEither";
 import type * as v from "valibot";
 
 import type { Contest } from "../contest.ts";
@@ -28,16 +28,19 @@ export interface ContestProvider<
   fetchContest(
     ctx: BaseContext<S>,
     contestId: string,
-  ): ResultAsync<Contest, ProviderError>;
+  ): TE.TaskEither<ProviderError, Contest>;
   loginSchema: LoginSchema<LA, LO>;
-  login(ctx: BaseContext<S>, credentials: LO): ResultAsync<void, ProviderError>;
-  whoami(ctx: BaseContext<S>): ResultAsync<string, ProviderError>;
+  login(
+    ctx: BaseContext<S>,
+    credentials: LO,
+  ): TE.TaskEither<ProviderError, void>;
+  whoami(ctx: BaseContext<S>): TE.TaskEither<ProviderError, string>;
   isTargetUrl(
     ctx: BaseContext<S>,
     url: string,
-  ): ResultAsync<boolean, ProviderError>;
+  ): TE.TaskEither<ProviderError, boolean>;
   getContestDirectory(
     ctx: BaseContext<S>,
     contest: Contest,
-  ): ResultAsync<string, ProviderError>;
+  ): TE.TaskEither<ProviderError, string>;
 }

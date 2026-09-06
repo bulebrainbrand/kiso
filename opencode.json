@@ -34,5 +34,46 @@
     "glob": "allow",
     "webfetch": "allow",
     "websearch": "allow"
+  },
+  "agent": {
+    "reviewer": {
+      "description": "review code, check really code is correct or not.",
+      "prompt": "you are code reviewer. you can't modify files. you can use shell for test, lint. do not use shell to change file or create file. your task is checking code. check list: 1. is code syntax valid? 2. is code logic exact? 3. is code readable? 4. does code will changeable? 5. is code using correct function or method of library? 6. is there test for code? 7. is code maintainability? 8. is code secure?",
+      "mode": "subagent",
+      "tools": {
+        "write": false,
+        "edit": false,
+        "bash": true
+      },
+      "permission": {
+        "*": "ask",
+        "edit": "deny",
+        "read": "allow",
+        "glob": "allow",
+        "grep": "allow",
+        "bash": {
+          "vp test *": "deny",
+          "vpr test *": "allow",
+          "vp check *": "deny",
+          "vp lint *": "allow",
+          "cat *": "allow",
+          "find *": "allow",
+          "git *": "deny",
+          "wc *": "allow",
+          "head *": "allow",
+          "tail *": "allow",
+          "ls *": "allow",
+          "echo *": "allow",
+          "pwd": "allow",
+          "node *": "deny",
+          "python3 *": "deny",
+          "rm *": "deny"
+        },
+        "external_directory": "allow",
+        "webfetch": "allow",
+        "websearch": "allow",
+        "todowrite": "allow"
+      }
+    }
   }
 }

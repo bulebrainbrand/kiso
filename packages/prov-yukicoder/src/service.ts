@@ -8,7 +8,7 @@ import {
   type UnexpectedError,
   type ValidationError,
 } from "@kiso/types";
-import { errAsync, fromPromise, ResultAsync } from "neverthrow";
+import { errAsync, fromPromise, okAsync, ResultAsync } from "neverthrow";
 import { parse, type HTMLElement } from "node-html-parser";
 import * as v from "valibot";
 
@@ -25,6 +25,18 @@ export class YukiCoderService implements ContestProvider<
   { API_KEY: string }
 > {
   constructor(readonly name: string) {}
+  isTargetUrl(
+    ctx: BaseContext<{ API_KEY: string }>,
+    url: string,
+  ): ResultAsync<boolean, ProviderError> {
+    return okAsync(url.startsWith("https://yukicoder.me"));
+  }
+  getContestDirectory(
+    ctx: BaseContext<{ API_KEY: string }>,
+    contest: Contest,
+  ): ResultAsync<string, ProviderError> {
+    return okAsync(`./${contest.id}`);
+  }
   loginSchema = v.object({ API_KEY: v.string() });
   login(ctx: YukicoderCtx, credentials: YukicoderLoginOutput) {
     return toAsync(ctx.storage.setItem("API_KEY", credentials.API_KEY));

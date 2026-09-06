@@ -32,4 +32,12 @@ export interface ContestProvider<
   loginSchema: LoginSchema<LA, LO>;
   login(ctx: BaseContext<S>, credentials: LO): ResultAsync<void, ProviderError>;
   whoami(ctx: BaseContext<S>): ResultAsync<string, ProviderError>;
+  isTargetUrl(
+    ctx: BaseContext<S>,
+    url: string,
+  ): ResultAsync<boolean, ProviderError>;
+  getContestDirectory(
+    ctx: BaseContext<S>,
+    contest: Contest,
+  ): ResultAsync<string, ProviderError>;
 }

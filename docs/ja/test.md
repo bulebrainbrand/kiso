@@ -11,7 +11,9 @@ kiso test a --p atcoder --c abc100
 
 kiso test a --c abc100 # この名前のcontestが1つだけの場合実行されます
 
-kiso test a --p atcoder # errorになります。詳しくは ## find target > ### providerが指定されている場合 > #### contestが指定されていない場合
+kiso test a --p atcoder # errorになります。
+
+kiso test # single probremの場合は動作します
 ```
 
 ## test

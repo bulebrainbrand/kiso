@@ -14,6 +14,8 @@ kiso submit a --p atcoder --c abc100
 kiso submit a --c abc100 # この名前のcontestが1つだけの場合提出されます
 
 kiso submit a --p atcoder # errorになります。
+
+kiso submit # single probremの場合は一意に定まります
 ```
 
 まず、kiso path resolverに委譲します。

@@ -182,3 +182,48 @@ describe("YukiCoderService.fetchContest", () => {
     );
   });
 });
+
+describe("YukiCoderService.isTargetUrl", () => {
+  it("yukicoder.meのURLならtrueを返す", async () => {
+    const service = new YukiCoderService("yukicoder");
+    const ctx = makeCtx(() => errAsync({ type: "not_found", url: "" }));
+    for (const url of [
+      "https://yukicoder.me",
+      "https://yukicoder.me/contests/100",
+      "https://yukicoder.me/problems/no/1",
+    ]) {
+      const result = await service.isTargetUrl(ctx, url);
+      expect(result.isOk()).toBe(true);
+      if (result.isErr()) continue;
+      expect(result.value).toBe(true);
+    }
+  });
+
+  it("yukicoder.me以外のURLならfalseを返す", async () => {
+    const service = new YukiCoderService("yukicoder");
+    const ctx = makeCtx(() => errAsync({ type: "not_found", url: "" }));
+    for (const url of [
+      "https://atcoder.jp/contests/abc001",
+      "http://yukicoder.me/problems/no/1",
+      "",
+    ]) {
+      const result = await service.isTargetUrl(ctx, url);
+      expect(result.isOk()).toBe(true);
+      if (result.isErr()) continue;
+      expect(result.value).toBe(false);
+    }
+  });
+});
+
+describe("YukiCoderService.getContestDirectory", () => {
+  it("コンテストIDからディレクトリパスを返す", async () => {
+    const service = new YukiCoderService("yukicoder");
+    const ctx = makeCtx(() => errAsync({ type: "not_found", url: "" }));
+    const contest: Contest = { id: "123", probrems: [] };
+
+    const result = await service.getContestDirectory(ctx, contest);
+    expect(result.isOk()).toBe(true);
+    if (result.isErr()) return;
+    expect(result.value).toBe("./123");
+  });
+});

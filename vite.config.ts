@@ -29,7 +29,12 @@ export default defineConfig({
       reporter: ["text"],
       enabled: true,
     },
+    exclude: ["**/node_modules/**", "**/.git/**", "**/dist/**"],
     isolate: false,
+    setupFiles: [
+      "./packages/core/src/test-setup.ts",
+      "./packages/prov-yukicoder/src/test-setup.ts",
+    ],
   },
   run: {
     cache: true,

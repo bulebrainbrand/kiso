@@ -21,6 +21,22 @@ export function toBeRightWith(
 ): MatcherResult {
   const { matcherHint, printReceived } = this.utils;
   const hint = matcherHint(".toBeRightWith", "received", "predicate");
+  if (typeof predicate !== "function") {
+    return {
+      pass: false,
+      message: () =>
+        `${hint}\n\nPredicate must be a function:\n  ${printReceived(predicate)}`,
+      actual: received,
+    };
+  }
+  if (typeof received !== "object" || received === null) {
+    return {
+      pass: false,
+      message: () =>
+        `${hint}\n\nReceived value must be an fp-ts Either:\n  ${printReceived(received)}`,
+      actual: received,
+    };
+  }
   const either = received as E.Either<unknown, unknown>;
   if (E.isRight(either)) {
     const pass = predicate(either.right) === true;
@@ -38,7 +54,7 @@ export function toBeRightWith(
       pass: false,
       message: () =>
         `${hint}\n\nExpected Right, but received Left:\n  ${printReceived(either.left)}`,
-      actual: either,
+      actual: either.left,
     };
   }
   return {

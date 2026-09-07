@@ -21,6 +21,22 @@ export function toBeLeftWith(
 ): MatcherResult {
   const { matcherHint, printReceived } = this.utils;
   const hint = matcherHint(".toBeLeftWith", "received", "predicate");
+  if (typeof predicate !== "function") {
+    return {
+      pass: false,
+      message: () =>
+        `${hint}\n\nPredicate must be a function:\n  ${printReceived(predicate)}`,
+      actual: received,
+    };
+  }
+  if (typeof received !== "object" || received === null) {
+    return {
+      pass: false,
+      message: () =>
+        `${hint}\n\nReceived value must be an fp-ts Either:\n  ${printReceived(received)}`,
+      actual: received,
+    };
+  }
   const either = received as E.Either<unknown, unknown>;
   if (E.isLeft(either)) {
     const pass = predicate(either.left) === true;
@@ -38,7 +54,7 @@ export function toBeLeftWith(
       pass: false,
       message: () =>
         `${hint}\n\nExpected Left, but received Right:\n  ${printReceived(either.right)}`,
-      actual: either,
+      actual: either.right,
     };
   }
   return {

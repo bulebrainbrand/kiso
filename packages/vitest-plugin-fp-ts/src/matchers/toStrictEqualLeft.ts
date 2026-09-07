@@ -13,6 +13,15 @@ export function toStrictEqualLeft(
 ): MatcherResult {
   const { matcherHint, printExpected, printReceived } = this.utils;
   const hint = matcherHint(".toStrictEqualLeft", "received", "expected");
+  if (typeof received !== "object" || received === null) {
+    return {
+      pass: false,
+      message: () =>
+        `${hint}\n\nReceived value must be an fp-ts Either:\n  ${printReceived(received)}`,
+      actual: received,
+      expected,
+    };
+  }
   const either = received as E.Either<unknown, unknown>;
   if (E.isLeft(either)) {
     const pass = this.equals(
@@ -36,7 +45,7 @@ export function toStrictEqualLeft(
       pass: false,
       message: () =>
         `${hint}\n\nExpected Left, but received Right:\n  ${printReceived(either.right)}`,
-      actual: either,
+      actual: either.right,
       expected,
     };
   }

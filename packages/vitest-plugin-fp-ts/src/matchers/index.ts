@@ -23,7 +23,14 @@ export interface FpTsMatchers<T = any>
     ToBeRightWithMatcher<T>,
     ToBeLeftWithMatcher<T> {}
 
-export const matchers: Record<string, Matcher> = {
+export const matchers: {
+  toBeRight: Matcher;
+  toBeLeft: Matcher;
+  toStrictEqualRight: Matcher;
+  toStrictEqualLeft: Matcher;
+  toBeRightWith: Matcher;
+  toBeLeftWith: Matcher;
+} = {
   toBeRight,
   toBeLeft,
   toStrictEqualRight,

@@ -9,13 +9,24 @@ export interface ToBeRightMatcher {
 export function toBeRight(
   this: MatcherState,
   received: unknown,
-  expected?: unknown,
+  ...args: [] | [expected: unknown]
 ): MatcherResult {
   const { matcherHint, printExpected, printReceived } = this.utils;
   const hint = matcherHint(".toBeRight", "received", "expected");
+  const hasExpected = args.length > 0;
+  const expected = args[0];
+  if (typeof received !== "object" || received === null) {
+    return {
+      pass: false,
+      message: () =>
+        `${hint}\n\nReceived value must be an fp-ts Either:\n  ${printReceived(received)}`,
+      actual: received,
+      ...(hasExpected ? { expected } : {}),
+    };
+  }
   const either = received as E.Either<unknown, unknown>;
   if (E.isRight(either)) {
-    if (expected === undefined) {
+    if (!hasExpected) {
       return {
         pass: true,
         message: () =>
@@ -41,8 +52,8 @@ export function toBeRight(
       pass: false,
       message: () =>
         `${hint}\n\nExpected Right, but received Left:\n  ${printReceived(either.left)}`,
-      actual: either,
-      expected,
+      actual: either.left,
+      ...(hasExpected ? { expected } : {}),
     };
   }
   return {
@@ -50,6 +61,6 @@ export function toBeRight(
     message: () =>
       `${hint}\n\nReceived value must be an fp-ts Either:\n  ${printReceived(received)}`,
     actual: received,
-    expected,
+    ...(hasExpected ? { expected } : {}),
   };
 }

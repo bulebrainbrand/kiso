@@ -1,7 +1,7 @@
 import * as E from "fp-ts/Either";
 import { describe, expect, it } from "vite-plus/test";
 
-import "../vitest.ts";
+import "../vite-plus.ts";
 
 describe("toBeRight", () => {
   it("引数なしでRightを通過する", () => {

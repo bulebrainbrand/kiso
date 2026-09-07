@@ -14,14 +14,14 @@ import {
   type ToStrictEqualRightMatcher,
 } from "./toStrictEqualRight.ts";
 
-export interface FpTsMatchers
+export interface FpTsMatchers<T = any>
   extends
     ToBeRightMatcher,
     ToBeLeftMatcher,
     ToStrictEqualRightMatcher,
     ToStrictEqualLeftMatcher,
-    ToBeRightWithMatcher,
-    ToBeLeftWithMatcher {}
+    ToBeRightWithMatcher<T>,
+    ToBeLeftWithMatcher<T> {}
 
 export const matchers: Record<string, Matcher> = {
   toBeRight,

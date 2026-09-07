@@ -1,9 +1,16 @@
 import * as E from "fp-ts/Either";
-import { describe, expect, it, vi } from "vite-plus/test";
+import { describe, expect, expectTypeOf, it, vi } from "vite-plus/test";
 
 import "../vite-plus.ts";
 
 describe("toBeLeftWith", () => {
+  it("述語の引数はLeftの中身の型に推論される", () => {
+    expect(E.left("oops")).toBeLeftWith((s) => {
+      expectTypeOf(s).toEqualTypeOf<string>();
+      return s.length > 0;
+    });
+  });
+
   it("述語を満たすLeftを通過する", () => {
     expect(E.left("oops")).toBeLeftWith((s) => s.length > 0);
   });

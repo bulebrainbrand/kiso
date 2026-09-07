@@ -2,8 +2,16 @@ import * as E from "fp-ts/Either";
 // oxlint-disable-next-line vite-plus/prefer-vite-plus-imports
 import type { MatcherResult, MatcherState } from "vitest";
 
-export interface ToBeRightWithMatcher {
-  toBeRightWith(predicate: (value: any) => boolean): void;
+export interface ToBeRightWithMatcher<T = any> {
+  toBeRightWith(
+    predicate: (
+      value: 0 extends 1 & T
+        ? any
+        : [T] extends [E.Either<unknown, infer A>]
+          ? A
+          : any,
+    ) => boolean,
+  ): void;
 }
 
 export function toBeRightWith(

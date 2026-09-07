@@ -1,9 +1,16 @@
 import * as E from "fp-ts/Either";
-import { describe, expect, it, vi } from "vite-plus/test";
+import { describe, expect, expectTypeOf, it, vi } from "vite-plus/test";
 
-import "../vitest.ts";
+import "../vite-plus.ts";
 
 describe("toBeRightWith", () => {
+  it("述語の引数はRightの中身の型に推論される", () => {
+    expect(E.right(2)).toBeRightWith((n) => {
+      expectTypeOf(n).toEqualTypeOf<number>();
+      return n > 1;
+    });
+  });
+
   it("述語を満たすRightを通過する", () => {
     expect(E.right(2)).toBeRightWith((n) => n > 1);
   });

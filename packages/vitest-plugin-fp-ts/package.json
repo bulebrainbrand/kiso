@@ -2,7 +2,7 @@
   "name": "@kiso/vitest-plugin-fp-ts",
   "version": "0.0.0",
   "description": "A vitest plugin for fp-ts",
-  "homepage": "https://github.com/bulebrainbrand/core#readme",
+  "homepage": "https://github.com/bulebrainbrand/kiso/packages/vitest-plugin-fp-ts#readme",
   "bugs": {
     "url": "https://github.com/bulebrainbrand/kiso/issues"
   },

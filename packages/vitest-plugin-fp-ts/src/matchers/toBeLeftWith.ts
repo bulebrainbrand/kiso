@@ -2,8 +2,16 @@ import * as E from "fp-ts/Either";
 // oxlint-disable-next-line vite-plus/prefer-vite-plus-imports
 import type { MatcherResult, MatcherState } from "vitest";
 
-export interface ToBeLeftWithMatcher {
-  toBeLeftWith(predicate: (value: any) => boolean): void;
+export interface ToBeLeftWithMatcher<T = any> {
+  toBeLeftWith(
+    predicate: (
+      value: 0 extends 1 & T
+        ? any
+        : [T] extends [E.Either<infer L, unknown>]
+          ? L
+          : any,
+    ) => boolean,
+  ): void;
 }
 
 export function toBeLeftWith(

@@ -15,6 +15,6 @@ export default defineConfig({
   },
   fmt: {},
   test: {
-    setupFiles: ["./src/test-setup.ts"],
+    setupFiles: ["../../scripts/test-setup.ts"],
   },
 });

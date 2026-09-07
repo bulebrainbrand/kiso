@@ -31,7 +31,7 @@ export default defineConfig({
     },
     exclude: ["**/node_modules/**", "**/.git/**", "**/dist/**"],
     isolate: false,
-    setupFiles: ["./packages/core/src/test-setup.ts"],
+    setupFiles: ["./scripts/test-setup.ts"],
   },
   run: {
     cache: true,

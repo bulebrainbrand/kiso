@@ -290,6 +290,9 @@ importers:
       '@kiso/types':
         specifier: workspace:*
         version: link:../types
+      '@kiso/vitest-plugin-fp-ts':
+        specifier: workspace:*
+        version: link:../vitest-plugin-fp-ts
       '@types/node':
         specifier: 'catalog:'
         version: 24.13.3
@@ -333,6 +336,9 @@ importers:
 
   scripts:
     devDependencies:
+      '@kiso/vitest-plugin-fp-ts':
+        specifier: workspace:*
+        version: link:../packages/vitest-plugin-fp-ts
       '@types/node':
         specifier: 'catalog:'
         version: 24.13.3

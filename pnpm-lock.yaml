@@ -336,9 +336,6 @@ importers:
 
   scripts:
     devDependencies:
-      '@kiso/vitest-plugin-fp-ts':
-        specifier: workspace:*
-        version: link:../packages/vitest-plugin-fp-ts
       '@types/node':
         specifier: 'catalog:'
         version: 24.13.3

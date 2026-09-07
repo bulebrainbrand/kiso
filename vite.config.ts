@@ -31,7 +31,10 @@ export default defineConfig({
     },
     exclude: ["**/node_modules/**", "**/.git/**", "**/dist/**"],
     isolate: false,
-    setupFiles: ["./scripts/test-setup.ts"],
+    setupFiles: [
+      "./packages/core/src/test-setup.ts",
+      "./packages/prov-yukicoder/src/test-setup.ts",
+    ],
   },
   run: {
     cache: true,

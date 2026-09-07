@@ -16,6 +16,13 @@ describe("toBeRight", () => {
     expect(() => expect(E.right(1)).toBeRight(2)).toThrow();
   });
 
+  it("undefinedとの比較を区別する", () => {
+    expect(E.right(undefined)).toBeRight();
+    expect(E.right(undefined)).toBeRight(undefined);
+    expect(() => expect(E.right(1)).toBeRight(undefined)).toThrow();
+    expect(E.right(1)).not.toBeRight(undefined);
+  });
+
   it("Leftで失敗する", () => {
     expect(() => expect(E.left("err")).toBeRight()).toThrow();
   });

@@ -2,7 +2,6 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import * as E from "fp-ts/Either";
 import { afterEach, describe, expect, it } from "vite-plus/test";
 
 import { KISO_CONFIG_FILE_NAME } from "../constants.ts";
@@ -30,11 +29,7 @@ describe("findConfig", () => {
     const cwd = join(makeTempRoot(), "a");
     mkdirSync(cwd, { recursive: true });
     writeFileSync(join(cwd, KISO_CONFIG_FILE_NAME), CONFIG_CONTENT);
-    const result = findConfig(cwd);
-    expect(E.isRight(result)).toBe(true);
-    if (E.isRight(result)) {
-      expect(result.right).toBe(join(cwd, KISO_CONFIG_FILE_NAME));
-    }
+    expect(findConfig(cwd)).toBeRight(join(cwd, KISO_CONFIG_FILE_NAME));
   });
 
   it("上位階層のconfigを見つける", () => {
@@ -42,11 +37,7 @@ describe("findConfig", () => {
     const cwd = join(root, "a", "b", "c");
     mkdirSync(cwd, { recursive: true });
     writeFileSync(join(root, KISO_CONFIG_FILE_NAME), CONFIG_CONTENT);
-    const result = findConfig(cwd);
-    expect(E.isRight(result)).toBe(true);
-    if (E.isRight(result)) {
-      expect(result.right).toBe(join(root, KISO_CONFIG_FILE_NAME));
-    }
+    expect(findConfig(cwd)).toBeRight(join(root, KISO_CONFIG_FILE_NAME));
   });
 
   it("最も近いconfigを優先する", () => {
@@ -56,32 +47,20 @@ describe("findConfig", () => {
     mkdirSync(cwd, { recursive: true });
     writeFileSync(join(root, KISO_CONFIG_FILE_NAME), CONFIG_CONTENT);
     writeFileSync(join(middle, KISO_CONFIG_FILE_NAME), CONFIG_CONTENT);
-    const result = findConfig(cwd);
-    expect(E.isRight(result)).toBe(true);
-    if (E.isRight(result)) {
-      expect(result.right).toBe(join(middle, KISO_CONFIG_FILE_NAME));
-    }
+    expect(findConfig(cwd)).toBeRight(join(middle, KISO_CONFIG_FILE_NAME));
   });
 
   it("見つからない場合はnot_foundを返す", () => {
     const cwd = join(makeTempRoot(), "a", "b");
     mkdirSync(cwd, { recursive: true });
-    const result = findConfig(cwd);
-    expect(E.isLeft(result)).toBe(true);
-    if (E.isLeft(result)) {
-      expect(result.left).toEqual({ type: "not_found" });
-    }
+    expect(findConfig(cwd)).toBeLeft({ type: "not_found" });
   });
 
   it("同名のディレクトリがある場合はis_directoryを返す", () => {
     const cwd = join(makeTempRoot(), "a");
     const candidate = join(cwd, KISO_CONFIG_FILE_NAME);
     mkdirSync(candidate, { recursive: true });
-    const result = findConfig(cwd);
-    expect(E.isLeft(result)).toBe(true);
-    if (E.isLeft(result)) {
-      expect(result.left).toEqual({ type: "is_directory", path: candidate });
-    }
+    expect(findConfig(cwd)).toBeLeft({ type: "is_directory", path: candidate });
   });
 
   it("同名ディレクトリが近くにある場合は親のconfigを使わずis_directoryを返す", () => {
@@ -92,13 +71,9 @@ describe("findConfig", () => {
     const dirCandidate = join(middle, KISO_CONFIG_FILE_NAME);
     writeFileSync(join(root, KISO_CONFIG_FILE_NAME), CONFIG_CONTENT);
     mkdirSync(dirCandidate, { recursive: true });
-    const result = findConfig(cwd);
-    expect(E.isLeft(result)).toBe(true);
-    if (E.isLeft(result)) {
-      expect(result.left).toEqual({
-        type: "is_directory",
-        path: dirCandidate,
-      });
-    }
+    expect(findConfig(cwd)).toBeLeft({
+      type: "is_directory",
+      path: dirCandidate,
+    });
   });
 });

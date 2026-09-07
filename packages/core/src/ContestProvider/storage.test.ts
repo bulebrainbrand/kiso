@@ -3,7 +3,6 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import * as E from "fp-ts/Either";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 
 import { Storage } from "./storage.ts";
@@ -46,7 +45,7 @@ describe("Storage constructor", () => {
   it("ファイル存在時もthrowしない", () => {
     const root = makeTempRoot();
     const storage = new Storage<TestStore>("store", root);
-    expect(E.isRight(storage.setItem("name", "a"))).toBe(true);
+    expect(storage.setItem("name", "a")).toBeRight();
     expect(() => new Storage<TestStore>("store", root)).not.toThrow();
   });
 
@@ -61,48 +60,36 @@ describe("Storage getItem/setItem", () => {
   it("setした値をgetで読める(全プリミティブ)", () => {
     const root = makeTempRoot();
     const storage = new Storage<TestStore>("store", root);
-    expect(E.isRight(storage.setItem("name", "hello"))).toBe(true);
-    expect(E.isRight(storage.setItem("count", 42))).toBe(true);
-    expect(E.isRight(storage.setItem("flag", true))).toBe(true);
-    expect(E.isRight(storage.setItem("nothing", null))).toBe(true);
+    expect(storage.setItem("name", "hello")).toBeRight();
+    expect(storage.setItem("count", 42)).toBeRight();
+    expect(storage.setItem("flag", true)).toBeRight();
+    expect(storage.setItem("nothing", null)).toBeRight();
 
-    const name = storage.getItem("name");
-    const count = storage.getItem("count");
-    const flag = storage.getItem("flag");
-    const nothing = storage.getItem("nothing");
-    if (E.isRight(name)) expect(name.right).toBe("hello");
-    else expect.unreachable();
-    if (E.isRight(count)) expect(count.right).toBe(42);
-    else expect.unreachable();
-    if (E.isRight(flag)) expect(flag.right).toBe(true);
-    else expect.unreachable();
+    expect(storage.getItem("name")).toBeRight("hello");
+    expect(storage.getItem("count")).toBeRight(42);
+    expect(storage.getItem("flag")).toBeRight(true);
     // null値は欠損と同様にnullとして返る
-    if (E.isRight(nothing)) expect(nothing.right).toBe(null);
-    else expect.unreachable();
+    expect(storage.getItem("nothing")).toBeRight(null);
   });
 
   it("ファイル不存在のgetItemはRight(null)", () => {
     const root = makeTempRoot();
     const storage = new Storage<TestStore>("store", root);
-    const result = storage.getItem("name");
-    expect(E.isRight(result)).toBe(true);
-    if (E.isRight(result)) expect(result.right).toBe(null);
+    expect(storage.getItem("name")).toBeRight(null);
   });
 
   it("未設定キーのgetItemはRight(null)", () => {
     const root = makeTempRoot();
     const storage = new Storage<TestStore>("store", root);
-    expect(E.isRight(storage.setItem("name", "a"))).toBe(true);
-    const result = storage.getItem("count");
-    expect(E.isRight(result)).toBe(true);
-    if (E.isRight(result)) expect(result.right).toBe(null);
+    expect(storage.setItem("name", "a")).toBeRight();
+    expect(storage.getItem("count")).toBeRight(null);
   });
 
   it("setItemは既存キーを保持してマージする", () => {
     const root = makeTempRoot();
     const storage = new Storage<TestStore>("store", root);
-    expect(E.isRight(storage.setItem("name", "a"))).toBe(true);
-    expect(E.isRight(storage.setItem("count", 1))).toBe(true);
+    expect(storage.setItem("name", "a")).toBeRight();
+    expect(storage.setItem("count", 1)).toBeRight();
     const raw = JSON.parse(fs.readFileSync(storageFile(root), "utf-8"));
     expect(raw).toEqual({ name: "a", count: 1 });
   });
@@ -110,11 +97,9 @@ describe("Storage getItem/setItem", () => {
   it("同キーのsetItemは上書きする", () => {
     const root = makeTempRoot();
     const storage = new Storage<TestStore>("store", root);
-    expect(E.isRight(storage.setItem("name", "old"))).toBe(true);
-    expect(E.isRight(storage.setItem("name", "new"))).toBe(true);
-    const result = storage.getItem("name");
-    if (E.isRight(result)) expect(result.right).toBe("new");
-    else expect.unreachable();
+    expect(storage.setItem("name", "old")).toBeRight();
+    expect(storage.setItem("name", "new")).toBeRight();
+    expect(storage.getItem("name")).toBeRight("new");
     const raw = JSON.parse(fs.readFileSync(storageFile(root), "utf-8"));
     expect(raw).toEqual({ name: "new" });
   });
@@ -122,21 +107,17 @@ describe("Storage getItem/setItem", () => {
   it("別インスタンスから永続化した値を読める", () => {
     const root = makeTempRoot();
     const first = new Storage<TestStore>("store", root);
-    expect(E.isRight(first.setItem("name", "saved"))).toBe(true);
+    expect(first.setItem("name", "saved")).toBeRight();
     const second = new Storage<TestStore>("store", root);
-    const result = second.getItem("name");
-    if (E.isRight(result)) expect(result.right).toBe("saved");
-    else expect.unreachable();
+    expect(second.getItem("name")).toBeRight("saved");
   });
 
   it("存在しないdirでもsetItemで再帰作成される", () => {
     const root = makeTempRoot();
     const nested = join(root, "a", "b");
     const storage = new Storage<TestStore>("store", nested);
-    expect(E.isRight(storage.setItem("name", "x"))).toBe(true);
-    const result = storage.getItem("name");
-    if (E.isRight(result)) expect(result.right).toBe("x");
-    else expect.unreachable();
+    expect(storage.setItem("name", "x")).toBeRight();
+    expect(storage.getItem("name")).toBeRight("x");
   });
 });
 
@@ -145,15 +126,15 @@ describe("Storage 読み取りエラー", () => {
     const root = makeTempRoot();
     fs.writeFileSync(storageFile(root), "{broken");
     const storage = new Storage<TestStore>("store", root);
-    const get = storage.getItem("name");
-    expect(E.isLeft(get)).toBe(true);
-    if (E.isLeft(get)) expect(get.left.type).toBe("parse_error");
-    const set = storage.setItem("name", "x");
-    expect(E.isLeft(set)).toBe(true);
-    if (E.isLeft(set)) expect(set.left.type).toBe("parse_error");
-    const remove = storage.removeItem("name");
-    expect(E.isLeft(remove)).toBe(true);
-    if (E.isLeft(remove)) expect(remove.left.type).toBe("parse_error");
+    expect(storage.getItem("name")).toBeLeftWith(
+      (e) => e.type === "parse_error",
+    );
+    expect(storage.setItem("name", "x")).toBeLeftWith(
+      (e) => e.type === "parse_error",
+    );
+    expect(storage.removeItem("name")).toBeLeftWith(
+      (e) => e.type === "parse_error",
+    );
   });
 
   it("スキーマ違反のJSONはparse_error(ネスト/配列値/トップレベル非オブジェクト)", () => {
@@ -168,9 +149,9 @@ describe("Storage 読み取りエラー", () => {
       const root = makeTempRoot();
       fs.writeFileSync(storageFile(root), body);
       const storage = new Storage<TestStore>("store", root);
-      const result = storage.getItem("name");
-      expect(E.isLeft(result)).toBe(true);
-      if (E.isLeft(result)) expect(result.left.type).toBe("parse_error");
+      expect(storage.getItem("name")).toBeLeftWith(
+        (e) => e.type === "parse_error",
+      );
     }
   });
 
@@ -183,25 +164,20 @@ describe("Storage 読み取りエラー", () => {
     const storage = new Storage<TestStore>("store", root2);
     fs.mkdirSync(join(root2, "sub"));
     fs.writeFileSync(join(root2, "sub.json"), "{}");
-    expect(E.isRight(storage.setItem("name", "x"))).toBe(true);
+    expect(storage.setItem("name", "x")).toBeRight();
     // 実FS由来のread_errorはモックでも確認する
     vi.spyOn(fs, "readFileSync").mockImplementation(() => {
       throw codeError("EISDIR", "illegal operation on a directory");
     });
-    const result = storage.getItem("name");
-    expect(E.isLeft(result)).toBe(true);
-    if (E.isLeft(result)) {
-      expect(result.left.type).toBe("read_error");
-      if (result.left.type === "read_error") {
-        expect(result.left.code).toBe("EISDIR");
-      }
-    }
+    expect(storage.getItem("name")).toBeLeftWith(
+      (e) => e.type === "read_error" && e.code === "EISDIR",
+    );
   });
 
   it("code付きread失敗はread_errorとして伝播する", () => {
     const root = makeTempRoot();
     const storage = new Storage<TestStore>("store", root);
-    expect(E.isRight(storage.setItem("name", "x"))).toBe(true);
+    expect(storage.setItem("name", "x")).toBeRight();
     vi.spyOn(fs, "readFileSync").mockImplementation(() => {
       throw codeError("EACCES", "permission denied");
     });
@@ -210,13 +186,9 @@ describe("Storage 読み取りエラー", () => {
       storage.setItem("name", "y"),
       storage.removeItem("name"),
     ]) {
-      expect(E.isLeft(result)).toBe(true);
-      if (E.isLeft(result)) {
-        expect(result.left.type).toBe("read_error");
-        if (result.left.type === "read_error") {
-          expect(result.left.code).toBe("EACCES");
-        }
-      }
+      expect(result).toBeLeftWith(
+        (e) => e.type === "read_error" && e.code === "EACCES",
+      );
     }
   });
 
@@ -226,14 +198,10 @@ describe("Storage 読み取りエラー", () => {
     vi.spyOn(fs, "readFileSync").mockImplementation(() => {
       throw new Error("boom");
     });
-    const result = storage.getItem("name");
-    expect(E.isLeft(result)).toBe(true);
-    if (E.isLeft(result)) {
-      expect(result.left).toStrictEqual({
-        type: "unexpected_error",
-        message: "Error: boom",
-      });
-    }
+    expect(storage.getItem("name")).toStrictEqualLeft({
+      type: "unexpected_error",
+      message: "Error: boom",
+    });
   });
 
   it("非Errorのread失敗はJSON.stringifyしてunexpected_error", () => {
@@ -242,26 +210,22 @@ describe("Storage 読み取りエラー", () => {
     vi.spyOn(fs, "readFileSync").mockImplementation(() => {
       throw { reason: "disk gone" };
     });
-    const result = storage.getItem("name");
-    expect(E.isLeft(result)).toBe(true);
-    if (E.isLeft(result)) {
-      expect(result.left).toStrictEqual({
-        type: "unexpected_error",
-        message: `{"reason":"disk gone"}`,
-      });
-    }
+    expect(storage.getItem("name")).toStrictEqualLeft({
+      type: "unexpected_error",
+      message: `{"reason":"disk gone"}`,
+    });
   });
 
   it("SyntaxError以外のJSON.parse失敗はunexpected_error", () => {
     const root = makeTempRoot();
     const storage = new Storage<TestStore>("store", root);
-    expect(E.isRight(storage.setItem("name", "x"))).toBe(true);
+    expect(storage.setItem("name", "x")).toBeRight();
     vi.spyOn(JSON, "parse").mockImplementation(() => {
       throw new TypeError("weird");
     });
-    const result = storage.getItem("name");
-    expect(E.isLeft(result)).toBe(true);
-    if (E.isLeft(result)) expect(result.left.type).toBe("unexpected_error");
+    expect(storage.getItem("name")).toBeLeftWith(
+      (e) => e.type === "unexpected_error",
+    );
   });
 });
 
@@ -271,9 +235,9 @@ describe("Storage 書き込みエラー", () => {
     const storage = new Storage<TestStore>("store", root);
     const circular: Record<string, unknown> = {};
     circular["self"] = circular;
-    const result = storage.setItem("name", circular as unknown as string);
-    expect(E.isLeft(result)).toBe(true);
-    if (E.isLeft(result)) expect(result.left.type).toBe("stringify_error");
+    expect(storage.setItem("name", circular as unknown as string)).toBeLeftWith(
+      (e) => e.type === "stringify_error",
+    );
   });
 
   it("JSON.stringifyの非Error失敗はunexpected_error", () => {
@@ -282,14 +246,10 @@ describe("Storage 書き込みエラー", () => {
     vi.spyOn(JSON, "stringify").mockImplementationOnce(() => {
       throw { reason: "bad" };
     });
-    const result = storage.setItem("name", "x");
-    expect(E.isLeft(result)).toBe(true);
-    if (E.isLeft(result)) {
-      expect(result.left).toStrictEqual({
-        type: "unexpected_error",
-        message: `{"reason":"bad"}`,
-      });
-    }
+    expect(storage.setItem("name", "x")).toStrictEqualLeft({
+      type: "unexpected_error",
+      message: `{"reason":"bad"}`,
+    });
   });
 
   it("実FS: ファイルを親に持つdirへのsetItemはread_error(ENOTDIR)", () => {
@@ -297,14 +257,9 @@ describe("Storage 書き込みエラー", () => {
     const blocker = join(root, "blocker");
     fs.writeFileSync(blocker, "x");
     const storage = new Storage<TestStore>("store", join(blocker, "child"));
-    const result = storage.setItem("name", "x");
-    expect(E.isLeft(result)).toBe(true);
-    if (E.isLeft(result)) {
-      expect(result.left.type).toBe("read_error");
-      if (result.left.type === "read_error") {
-        expect(result.left.code).toBe("ENOTDIR");
-      }
-    }
+    expect(storage.setItem("name", "x")).toBeLeftWith(
+      (e) => e.type === "read_error" && e.code === "ENOTDIR",
+    );
   });
 
   it("code付きwrite失敗はwrite_errorとして伝播する", () => {
@@ -313,24 +268,19 @@ describe("Storage 書き込みエラー", () => {
     vi.spyOn(fs, "writeFileSync").mockImplementationOnce(() => {
       throw codeError("EACCES", "permission denied");
     });
-    const set = storage.setItem("name", "x");
-    expect(E.isLeft(set)).toBe(true);
-    if (E.isLeft(set)) {
-      expect(set.left.type).toBe("write_error");
-      if (set.left.type === "write_error") {
-        expect(set.left.code).toBe("EACCES");
-      }
-    }
+    expect(storage.setItem("name", "x")).toBeLeftWith(
+      (e) => e.type === "write_error" && e.code === "EACCES",
+    );
     // removeItem経路のwrite失敗も同様
-    expect(E.isRight(storage.clear())).toBe(true);
+    expect(storage.clear()).toBeRight();
     fs.writeFileSync(storageFile(root), `{"name":"a"}`);
     const fresh = new Storage<TestStore>("store", root);
     vi.spyOn(fs, "writeFileSync").mockImplementationOnce(() => {
       throw codeError("EACCES", "permission denied");
     });
-    const remove = fresh.removeItem("name");
-    expect(E.isLeft(remove)).toBe(true);
-    if (E.isLeft(remove)) expect(remove.left.type).toBe("write_error");
+    expect(fresh.removeItem("name")).toBeLeftWith(
+      (e) => e.type === "write_error",
+    );
   });
 
   it("codeなしErrorのwrite失敗はunexpected_error", () => {
@@ -339,14 +289,10 @@ describe("Storage 書き込みエラー", () => {
     vi.spyOn(fs, "writeFileSync").mockImplementation(() => {
       throw new Error("boom");
     });
-    const result = storage.setItem("name", "x");
-    expect(E.isLeft(result)).toBe(true);
-    if (E.isLeft(result)) {
-      expect(result.left).toStrictEqual({
-        type: "unexpected_error",
-        message: "Error: boom",
-      });
-    }
+    expect(storage.setItem("name", "x")).toStrictEqualLeft({
+      type: "unexpected_error",
+      message: "Error: boom",
+    });
   });
 
   it("非Errorのwrite失敗はJSON.stringifyしてunexpected_error", () => {
@@ -355,14 +301,10 @@ describe("Storage 書き込みエラー", () => {
     vi.spyOn(fs, "writeFileSync").mockImplementation(() => {
       throw { reason: "disk gone" };
     });
-    const result = storage.setItem("name", "x");
-    expect(E.isLeft(result)).toBe(true);
-    if (E.isLeft(result)) {
-      expect(result.left).toStrictEqual({
-        type: "unexpected_error",
-        message: `{"reason":"disk gone"}`,
-      });
-    }
+    expect(storage.setItem("name", "x")).toStrictEqualLeft({
+      type: "unexpected_error",
+      message: `{"reason":"disk gone"}`,
+    });
   });
 
   it("mkdir失敗もwrite_errorとして伝播する", () => {
@@ -371,9 +313,9 @@ describe("Storage 書き込みエラー", () => {
     vi.spyOn(fs, "mkdirSync").mockImplementation(() => {
       throw codeError("EACCES", "permission denied");
     });
-    const result = storage.setItem("name", "x");
-    expect(E.isLeft(result)).toBe(true);
-    if (E.isLeft(result)) expect(result.left.type).toBe("write_error");
+    expect(storage.setItem("name", "x")).toBeLeftWith(
+      (e) => e.type === "write_error",
+    );
   });
 });
 
@@ -381,22 +323,17 @@ describe("Storage removeItem", () => {
   it("ファイル不存在のremoveItemはRight(undefined)", () => {
     const root = makeTempRoot();
     const storage = new Storage<TestStore>("store", root);
-    const result = storage.removeItem("name");
-    expect(E.isRight(result)).toBe(true);
+    expect(storage.removeItem("name")).toBeRight();
   });
 
   it("存在キーを削除し他キーを残す", () => {
     const root = makeTempRoot();
     const storage = new Storage<TestStore>("store", root);
-    expect(E.isRight(storage.setItem("name", "a"))).toBe(true);
-    expect(E.isRight(storage.setItem("count", 1))).toBe(true);
-    expect(E.isRight(storage.removeItem("name"))).toBe(true);
-    const removed = storage.getItem("name");
-    if (E.isRight(removed)) expect(removed.right).toBe(null);
-    else expect.unreachable();
-    const kept = storage.getItem("count");
-    if (E.isRight(kept)) expect(kept.right).toBe(1);
-    else expect.unreachable();
+    expect(storage.setItem("name", "a")).toBeRight();
+    expect(storage.setItem("count", 1)).toBeRight();
+    expect(storage.removeItem("name")).toBeRight();
+    expect(storage.getItem("name")).toBeRight(null);
+    expect(storage.getItem("count")).toBeRight(1);
     const raw = JSON.parse(fs.readFileSync(storageFile(root), "utf-8"));
     expect(raw).toEqual({ count: 1 });
   });
@@ -404,9 +341,9 @@ describe("Storage removeItem", () => {
   it("不存在キーのremoveItemは書き込まずRight", () => {
     const root = makeTempRoot();
     const storage = new Storage<TestStore>("store", root);
-    expect(E.isRight(storage.setItem("name", "a"))).toBe(true);
+    expect(storage.setItem("name", "a")).toBeRight();
     const spy = vi.spyOn(fs, "writeFileSync");
-    expect(E.isRight(storage.removeItem("count"))).toBe(true);
+    expect(storage.removeItem("count")).toBeRight();
     expect(spy).not.toHaveBeenCalled();
     const raw = JSON.parse(fs.readFileSync(storageFile(root), "utf-8"));
     expect(raw).toEqual({ name: "a" });
@@ -417,91 +354,73 @@ describe("Storage clear", () => {
   it("ファイル不存在のclearはRight(undefined)", () => {
     const root = makeTempRoot();
     const storage = new Storage<TestStore>("store", root);
-    const result = storage.clear();
-    expect(E.isRight(result)).toBe(true);
+    expect(storage.clear()).toBeRight();
   });
 
   it("clearはファイルを削除しgetItemはnullに戻る", () => {
     const root = makeTempRoot();
     const storage = new Storage<TestStore>("store", root);
-    expect(E.isRight(storage.setItem("name", "a"))).toBe(true);
+    expect(storage.setItem("name", "a")).toBeRight();
     expect(fs.existsSync(storageFile(root))).toBe(true);
-    expect(E.isRight(storage.clear())).toBe(true);
+    expect(storage.clear()).toBeRight();
     expect(fs.existsSync(storageFile(root))).toBe(false);
-    const result = storage.getItem("name");
-    if (E.isRight(result)) expect(result.right).toBe(null);
-    else expect.unreachable();
+    expect(storage.getItem("name")).toBeRight(null);
   });
 
   it("clear後のsetItemで再作成できる", () => {
     const root = makeTempRoot();
     const storage = new Storage<TestStore>("store", root);
-    expect(E.isRight(storage.setItem("name", "a"))).toBe(true);
-    expect(E.isRight(storage.clear())).toBe(true);
-    expect(E.isRight(storage.setItem("name", "b"))).toBe(true);
-    const result = storage.getItem("name");
-    if (E.isRight(result)) expect(result.right).toBe("b");
-    else expect.unreachable();
+    expect(storage.setItem("name", "a")).toBeRight();
+    expect(storage.clear()).toBeRight();
+    expect(storage.setItem("name", "b")).toBeRight();
+    expect(storage.getItem("name")).toBeRight("b");
   });
 
   it("削除直前のENOENTはRight扱いになる", () => {
     const root = makeTempRoot();
     const storage = new Storage<TestStore>("store", root);
-    expect(E.isRight(storage.setItem("name", "a"))).toBe(true);
+    expect(storage.setItem("name", "a")).toBeRight();
     vi.spyOn(fs, "rmSync").mockImplementation(() => {
       throw codeError("ENOENT", "gone");
     });
-    expect(E.isRight(storage.clear())).toBe(true);
+    expect(storage.clear()).toBeRight();
   });
 
   it("code付きrm失敗はwrite_error", () => {
     const root = makeTempRoot();
     const storage = new Storage<TestStore>("store", root);
-    expect(E.isRight(storage.setItem("name", "a"))).toBe(true);
+    expect(storage.setItem("name", "a")).toBeRight();
     vi.spyOn(fs, "rmSync").mockImplementation(() => {
       throw codeError("EACCES", "permission denied");
     });
-    const result = storage.clear();
-    expect(E.isLeft(result)).toBe(true);
-    if (E.isLeft(result)) {
-      expect(result.left.type).toBe("write_error");
-      if (result.left.type === "write_error") {
-        expect(result.left.code).toBe("EACCES");
-      }
-    }
+    expect(storage.clear()).toBeLeftWith(
+      (e) => e.type === "write_error" && e.code === "EACCES",
+    );
   });
 
   it("codeなしErrorのrm失敗はunexpected_error", () => {
     const root = makeTempRoot();
     const storage = new Storage<TestStore>("store", root);
-    expect(E.isRight(storage.setItem("name", "a"))).toBe(true);
+    expect(storage.setItem("name", "a")).toBeRight();
     vi.spyOn(fs, "rmSync").mockImplementation(() => {
       throw new Error("boom");
     });
-    const result = storage.clear();
-    expect(E.isLeft(result)).toBe(true);
-    if (E.isLeft(result)) {
-      expect(result.left).toStrictEqual({
-        type: "unexpected_error",
-        message: "Error: boom",
-      });
-    }
+    expect(storage.clear()).toStrictEqualLeft({
+      type: "unexpected_error",
+      message: "Error: boom",
+    });
   });
 
   it("非Errorのrm失敗はJSON.stringifyしてunexpected_error", () => {
     const root = makeTempRoot();
     const storage = new Storage<TestStore>("store", root);
-    expect(E.isRight(storage.setItem("name", "a"))).toBe(true);
+    expect(storage.setItem("name", "a")).toBeRight();
     vi.spyOn(fs, "rmSync").mockImplementation(() => {
       throw { reason: "disk gone" };
     });
-    const result = storage.clear();
-    expect(E.isLeft(result)).toBe(true);
-    if (E.isLeft(result)) {
-      expect(result.left).toStrictEqual({
-        type: "unexpected_error",
-        message: `{"reason":"disk gone"}`,
-      });
-    }
+    expect(storage.clear()).toStrictEqualLeft({
+      type: "unexpected_error",
+      message: `{"reason":"disk gone"}`,
+    });
   });
 });

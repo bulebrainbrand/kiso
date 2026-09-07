@@ -1,4 +1,3 @@
-import * as E from "fp-ts/Either";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 
 import { kisoFetch } from "./index.ts";
@@ -15,7 +14,7 @@ describe("kisoFetch", () => {
     const mock = vi.fn(async () => okResponse());
     vi.stubGlobal("fetch", mock);
     const result = await kisoFetch("https://example.com/")();
-    expect(E.isRight(result)).toBe(true);
+    expect(result).toBeRight();
   });
 
   it("404 は not_found でリトライしない", async () => {
@@ -26,13 +25,10 @@ describe("kisoFetch", () => {
       initialDelayMs: 0,
     })();
     expect(mock).toHaveBeenCalledTimes(1);
-    expect(E.isLeft(result)).toBe(true);
-    if (E.isLeft(result)) {
-      expect(result.left).toEqual({
-        type: "not_found",
-        url: "https://example.com/missing",
-      });
-    }
+    expect(result).toBeLeft({
+      type: "not_found",
+      url: "https://example.com/missing",
+    });
   });
 
   it("500 はリトライして成功できる", async () => {
@@ -46,7 +42,7 @@ describe("kisoFetch", () => {
       initialDelayMs: 0,
     })();
     expect(mock).toHaveBeenCalledTimes(2);
-    expect(E.isRight(result)).toBe(true);
+    expect(result).toBeRight();
   });
 
   it("回数超過で fetch_error になる", async () => {
@@ -59,14 +55,11 @@ describe("kisoFetch", () => {
       initialDelayMs: 0,
     })();
     expect(mock).toHaveBeenCalledTimes(2);
-    expect(E.isLeft(result)).toBe(true);
-    if (E.isLeft(result)) {
-      expect(result.left).toEqual({
-        type: "fetch_error",
-        status: 500,
-        error: "ISE",
-      });
-    }
+    expect(result).toBeLeft({
+      type: "fetch_error",
+      status: 500,
+      error: "ISE",
+    });
   });
 
   it("リトライ対象外の 4xx は即 fetch_error", async () => {
@@ -79,15 +72,11 @@ describe("kisoFetch", () => {
       initialDelayMs: 0,
     })();
     expect(mock).toHaveBeenCalledTimes(1);
-    if (E.isLeft(result)) {
-      expect(result.left).toEqual({
-        type: "fetch_error",
-        status: 400,
-        error: "Bad",
-      });
-    } else {
-      expect.unreachable();
-    }
+    expect(result).toBeLeft({
+      type: "fetch_error",
+      status: 400,
+      error: "Bad",
+    });
   });
 
   it("retryOn カスタムで 400 をリトライできる", async () => {
@@ -102,7 +91,7 @@ describe("kisoFetch", () => {
       retryOn: [400],
     })();
     expect(mock).toHaveBeenCalledTimes(2);
-    expect(E.isRight(result)).toBe(true);
+    expect(result).toBeRight();
   });
 
   it("throw は network_error になりリトライする", async () => {
@@ -116,7 +105,7 @@ describe("kisoFetch", () => {
       initialDelayMs: 0,
     })();
     expect(mock).toHaveBeenCalledTimes(2);
-    expect(E.isRight(result)).toBe(true);
+    expect(result).toBeRight();
   });
 
   it("throw が続くと network_error で確定する", async () => {
@@ -130,16 +119,12 @@ describe("kisoFetch", () => {
       initialDelayMs: 0,
     })();
     expect(mock).toHaveBeenCalledTimes(2);
-    if (E.isLeft(result)) {
-      expect(result.left).toEqual({
-        type: "network_error",
-        url: "https://example.com/",
-        message: "dns fail",
-        cause,
-      });
-    } else {
-      expect.unreachable();
-    }
+    expect(result).toBeLeft({
+      type: "network_error",
+      url: "https://example.com/",
+      message: "dns fail",
+      cause,
+    });
   });
 
   it("timeoutMs 超過は timeout_error", async () => {
@@ -156,15 +141,11 @@ describe("kisoFetch", () => {
       maxRetries: 0,
       timeoutMs: 10,
     })();
-    if (E.isLeft(result)) {
-      expect(result.left).toEqual({
-        type: "timeout_error",
-        url: "https://example.com/slow",
-        timeoutMs: 10,
-      });
-    } else {
-      expect.unreachable();
-    }
+    expect(result).toBeLeft({
+      type: "timeout_error",
+      url: "https://example.com/slow",
+      timeoutMs: 10,
+    });
   });
 
   it("事前に abort 済みなら abort_error で fetch を呼ばない", async () => {
@@ -176,11 +157,7 @@ describe("kisoFetch", () => {
       signal: controller.signal,
     })();
     expect(mock).not.toHaveBeenCalled();
-    if (E.isLeft(result)) {
-      expect(result.left.type).toBe("abort_error");
-    } else {
-      expect.unreachable();
-    }
+    expect(result).toBeLeftWith((e) => e.type === "abort_error");
   });
 
   it("maxRetries: Infinity は有限limitに倒して無限ループしない", async () => {
@@ -193,15 +170,11 @@ describe("kisoFetch", () => {
       initialDelayMs: 0,
     })();
     expect(mock).toHaveBeenCalledTimes(1);
-    if (E.isLeft(result)) {
-      expect(result.left).toEqual({
-        type: "fetch_error",
-        status: 500,
-        error: "ISE",
-      });
-    } else {
-      expect.unreachable();
-    }
+    expect(result).toBeLeft({
+      type: "fetch_error",
+      status: 500,
+      error: "ISE",
+    });
   });
 
   it("リトライ待機中に abort されると promptly に abort_error で終わる", async () => {
@@ -224,15 +197,11 @@ describe("kisoFetch", () => {
     const elapsedMs = Date.now() - startedAt;
     expect(mock).toHaveBeenCalledTimes(1);
     expect(elapsedMs).toBeLessThan(1000);
-    if (E.isLeft(result)) {
-      expect(result.left).toEqual({
-        type: "abort_error",
-        url: "https://example.com/",
-        reason,
-      });
-    } else {
-      expect.unreachable();
-    }
+    expect(result).toBeLeft({
+      type: "abort_error",
+      url: "https://example.com/",
+      reason,
+    });
   });
 
   it("Request の signal を abort すると fetch がキャンセルされる", async () => {
@@ -259,15 +228,11 @@ describe("kisoFetch", () => {
     }, 10);
     const result = await kisoFetch(request)();
     expect(mock).toHaveBeenCalledTimes(1);
-    if (E.isLeft(result)) {
-      expect(result.left).toEqual({
-        type: "abort_error",
-        url: "https://example.com/request-signal",
-        reason,
-      });
-    } else {
-      expect.unreachable();
-    }
+    expect(result).toBeLeft({
+      type: "abort_error",
+      url: "https://example.com/request-signal",
+      reason,
+    });
   });
 
   it("POST はステータス失敗でもリトライしない", async () => {
@@ -281,15 +246,11 @@ describe("kisoFetch", () => {
       { maxRetries: 2, initialDelayMs: 0 },
     )();
     expect(mock).toHaveBeenCalledTimes(1);
-    if (E.isLeft(result)) {
-      expect(result.left).toEqual({
-        type: "fetch_error",
-        status: 500,
-        error: "ISE",
-      });
-    } else {
-      expect.unreachable();
-    }
+    expect(result).toBeLeft({
+      type: "fetch_error",
+      status: 500,
+      error: "ISE",
+    });
   });
 
   it("POST はネットワーク失敗でもリトライしない", async () => {
@@ -304,11 +265,7 @@ describe("kisoFetch", () => {
       { maxRetries: 2, initialDelayMs: 0 },
     )();
     expect(mock).toHaveBeenCalledTimes(1);
-    if (E.isLeft(result)) {
-      expect(result.left.type).toBe("network_error");
-    } else {
-      expect.unreachable();
-    }
+    expect(result).toBeLeftWith((e) => e.type === "network_error");
   });
 
   it("PUT は冪等なのでリトライする", async () => {
@@ -323,7 +280,7 @@ describe("kisoFetch", () => {
       { maxRetries: 1, initialDelayMs: 0 },
     )();
     expect(mock).toHaveBeenCalledTimes(2);
-    expect(E.isRight(result)).toBe(true);
+    expect(result).toBeRight();
   });
 
   it("リトライ時に捨てる応答の body をキャンセルする", async () => {
@@ -342,7 +299,7 @@ describe("kisoFetch", () => {
       maxRetries: 1,
       initialDelayMs: 0,
     })();
-    expect(E.isRight(result)).toBe(true);
+    expect(result).toBeRight();
     expect(cancelled).toBe(true);
   });
 
@@ -362,7 +319,7 @@ describe("kisoFetch", () => {
       initialDelayMs: 0,
     })();
     expect(mock).toHaveBeenCalledTimes(2);
-    expect(E.isRight(result)).toBe(true);
+    expect(result).toBeRight();
   });
 
   it("404 終端時も応答の body をキャンセルする", async () => {
@@ -375,7 +332,10 @@ describe("kisoFetch", () => {
     const mock = vi.fn(async () => new Response(stream, { status: 404 }));
     vi.stubGlobal("fetch", mock);
     const result = await kisoFetch("https://example.com/gone")();
-    expect(E.isLeft(result)).toBe(true);
+    expect(result).toBeLeft({
+      type: "not_found",
+      url: "https://example.com/gone",
+    });
     expect(cancelled).toBe(true);
   });
 
@@ -397,7 +357,7 @@ describe("kisoFetch", () => {
       initialDelayMs: 0,
     })();
     expect(mock).toHaveBeenCalledTimes(2);
-    expect(E.isRight(result)).toBe(true);
+    expect(result).toBeRight();
     expect(seen).toEqual(["hello", "hello"]);
   });
 
@@ -418,14 +378,10 @@ describe("kisoFetch", () => {
       { maxRetries: 2, initialDelayMs: 0 },
     )();
     expect(mock).toHaveBeenCalledTimes(1);
-    if (E.isLeft(result)) {
-      expect(result.left).toEqual({
-        type: "fetch_error",
-        status: 500,
-        error: "ISE",
-      });
-    } else {
-      expect.unreachable();
-    }
+    expect(result).toBeLeft({
+      type: "fetch_error",
+      status: 500,
+      error: "ISE",
+    });
   });
 });

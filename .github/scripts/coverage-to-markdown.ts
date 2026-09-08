@@ -132,31 +132,30 @@ try ${entriesCoverage.length} files. found **${entriesCoverage.length - notfound
 
 in ${entriesCoverage.length} files, ${okFile.length} file(s) is 100% coverage with only same name file
 
-<details><summary>test failed files (${failedFile.length})</summary>
-
+###${failedFile.length} test failed 
 ${failedFile.map(([name, obj]) => `- [${name}](${name}) (test: [${obj.test}](${obj.test}))`).join("\n")}
 
 </details>
 
-<details><summary>test was not found files (${notfoundFile.length})</summary>
+<details><summary>${notfoundFile.length} test was not found files</summary>
 
 ${notfoundFile.map(([name]) => `- [${name}](${name})`).join("\n")}
 
 </details>
 
-<details><summary>not related - test didn't run target files (${notrelatedFile.length})</summary>
+<details><summary>${notrelatedFile.length} test file not related - test didn't run target files</summary>
 
 ${notrelatedFile.map(([name, obj]) => `- [${name}](${name}) (test:[${obj.test}](${obj.test}))`).join("\n")}
 
 </details>
 
-<details><summary>test was success and under 100% coverage files (${ngFile.length})</summary>
+<details><summary>${ngFile.length} test was success and under 100% coverage files</summary>
 
 ${ngFile.map(([name, obj]) => `- [${name}](${name}) (${obj.coverage.statements.pct} ${obj.coverage.branches.pct} ${obj.coverage.functions.pct} ${obj.coverage.lines.pct})`).join("\n")}
 
 </details>
 
-<details><summary>100% coverage files (${okFile.length})!</summary>
+<details><summary${okFile.length} >100% coverage files</summary>
 
 ${okFile.map(([name, obj]) => `- [${name}](${name}) (test:[${obj.test}](${obj.test}))`).join("\n")}
 

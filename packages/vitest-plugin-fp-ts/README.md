@@ -67,3 +67,7 @@ expect(E.left({ code: "oops", detail: undefined })).toStrictEqualLeft({
 ### toStrictEqualSome
 
 `Option`がSomeで、中身と第一引数が`toStrictEqual`相当で合致した場合に成功します。
+
+### toBeSomeWith
+
+`Option`がSomeかつコールバック関数がtrueと等しい場合に成功します

@@ -2,36 +2,28 @@ import * as E from "fp-ts/Either";
 // oxlint-disable-next-line vite-plus/prefer-vite-plus-imports
 import type { MatcherResult, MatcherState } from "vitest";
 
-export interface ToBeRightWithMatcher<T = any> {
-  toBeRightWith(
+export interface ToBeRightWithAsyncMatcher<T = any> {
+  toBeRightWithAsync(
     callback: (
       value: 0 extends 1 & T
         ? any
         : [T] extends [E.Either<unknown, infer A>]
           ? A
           : any,
-    ) => void,
-  ): void;
+    ) => void | Promise<void>,
+  ): Promise<void>;
 }
 
-function isThenable(value: unknown): value is PromiseLike<unknown> {
-  return (
-    typeof value === "object"
-    && value !== null
-    && typeof (value as { then?: unknown }).then === "function"
-  );
-}
-
-export function toBeRightWith(
+export async function toBeRightWithAsync(
   this: MatcherState,
   received: unknown,
-  callback: (value: any) => void,
-): MatcherResult {
+  callback: (value: any) => void | Promise<void>,
+): Promise<Extract<MatcherResult, { pass: boolean }>> {
   const { matcherHint, printReceived } = this.utils;
-  const hint = matcherHint(".toBeRightWith", "received", "callback");
+  const hint = matcherHint(".toBeRightWithAsync", "received", "callback");
   if (this.isNot) {
     throw new Error(
-      `${hint}\n\n.toBeRightWith does not support .not. Use .toBeRightWithAsync with await or assert the inner value directly.`,
+      `${hint}\n\n.toBeRightWithAsync does not support .not. Assert the inner value directly.`,
     );
   }
   if (typeof callback !== "function") {
@@ -52,14 +44,10 @@ export function toBeRightWith(
   }
   const either = received as E.Either<unknown, unknown>;
   if (E.isRight(either)) {
-    const returned = callback(either.right) as unknown;
-    if (isThenable(returned)) {
+    const resolved = (await callback(either.right)) as unknown;
+    if (resolved !== undefined) {
       console.warn(
-        "[toBeRightWith] callback returned a Promise. Use toBeRightWithAsync with await instead. Return value is ignored.",
-      );
-    } else if (returned !== undefined) {
-      console.warn(
-        "[toBeRightWith] callback return value is ignored. Use expect() inside the callback instead of returning a value.",
+        "[toBeRightWithAsync] callback return value is ignored. Use expect() inside the callback instead of returning a value.",
       );
     }
     return {

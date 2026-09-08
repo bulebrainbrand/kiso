@@ -28,13 +28,11 @@ describe("executeNewCommand", () => {
       "/workspace",
     )();
 
-    expect(result).toBeRightWith(
-      (value) =>
-        value.provider === yukicoder
-        && value.contestId === "100"
-        && JSON.stringify(value.contest)
-          === JSON.stringify({ id: "100", probrems: [] }),
-    );
+    expect(result).toBeRightWith((value) => {
+      expect(value.provider).toBe(yukicoder);
+      expect(value.contestId).toBe("100");
+      expect(value.contest).toEqual({ id: "100", probrems: [] });
+    });
   });
 
   it("URL入力をparseして抽出したcontestIdで取得する", async () => {
@@ -50,12 +48,10 @@ describe("executeNewCommand", () => {
       "/workspace",
     )();
 
-    expect(result).toBeRightWith(
-      (value) =>
-        value.contestId === "100"
-        && JSON.stringify(value.contest)
-          === JSON.stringify({ id: "100", probrems: [] }),
-    );
+    expect(result).toBeRightWith((value) => {
+      expect(value.contestId).toBe("100");
+      expect(value.contest).toEqual({ id: "100", probrems: [] });
+    });
   });
 
   it("明示provider+URL入力でもURL解析を優先する", async () => {
@@ -70,7 +66,9 @@ describe("executeNewCommand", () => {
       "/workspace",
     )();
     console.dir(result, { depth: 100 });
-    expect(result).toBeRightWith((value) => value.contestId === "100");
+    expect(result).toBeRightWith((value) => {
+      expect(value.contestId).toBe("100");
+    });
   });
 
   it("URLのparseに失敗したらcontest_id_parse_errorを返す", async () => {

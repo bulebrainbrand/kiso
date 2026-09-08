@@ -4,60 +4,89 @@ import { describe, expect, expectTypeOf, it, vi } from "vite-plus/test";
 import "../vite-plus.ts";
 
 describe("toBeRightWith", () => {
-  it("述語の引数はRightの中身の型に推論される", () => {
+  it("コールバックの引数はRightの中身の型に推論される", () => {
     expect(E.right(2)).toBeRightWith((n) => {
       expectTypeOf(n).toEqualTypeOf<number>();
-      return n > 1;
+      expect(n).toBe(2);
     });
   });
 
-  it("述語を満たすRightを通過する", () => {
-    expect(E.right(2)).toBeRightWith((n) => n > 1);
+  it("内側のexpectが通るRightを通過する", () => {
+    expect(E.right(2)).toBeRightWith((n) => {
+      expect(n).toBe(2);
+    });
   });
 
-  it("述語を満たさないRightで失敗する", () => {
-    expect(() => expect(E.right(0)).toBeRightWith((n) => n > 1)).toThrow(
-      "Expected Right value to satisfy predicate",
-    );
+  it("内側のexpect失敗はそのまま伝播する", () => {
+    expect(() =>
+      expect(E.right(1)).toBeRightWith((n) => {
+        expect(n).toBe(2);
+      }),
+    ).toThrow();
   });
 
-  it("Leftでは述語を呼ばず失敗する", () => {
-    const predicate = vi.fn(() => true);
-    expect(() => expect(E.left("err")).toBeRightWith(predicate)).toThrow(
+  it("Leftではコールバックを呼ばず失敗する", () => {
+    const callback = vi.fn(() => {});
+    expect(() => expect(E.left("err")).toBeRightWith(callback)).toThrow(
       "Expected Right, but received Left",
     );
-    expect(predicate).not.toHaveBeenCalled();
+    expect(callback).not.toHaveBeenCalled();
   });
 
-  it("Eitherでない値では述語を呼ばず失敗する", () => {
-    const predicate = vi.fn(() => true);
-    expect(() => expect(1).toBeRightWith(predicate)).toThrow(
+  it("Eitherでない値ではコールバックを呼ばず失敗する", () => {
+    const callback = vi.fn(() => {});
+    expect(() => expect(1).toBeRightWith(callback)).toThrow(
       "Received value must be an fp-ts Either",
     );
-    expect(() => expect({}).toBeRightWith(predicate)).toThrow(
+    expect(() => expect({}).toBeRightWith(callback)).toThrow(
       "Received value must be an fp-ts Either",
     );
-    expect(predicate).not.toHaveBeenCalled();
+    expect(callback).not.toHaveBeenCalled();
   });
 
-  it("述語が関数でない場合は失敗する", () => {
+  it("コールバックが関数でない場合は失敗する", () => {
     expect(() =>
       expect(E.right(1)).toBeRightWith(
-        "not a function" as unknown as () => boolean,
+        "not a function" as unknown as () => void,
       ),
-    ).toThrow("Predicate must be a function");
+    ).toThrow("Callback must be a function");
   });
 
-  it("述語が関数でなくreceivedも不正な場合は述語エラーが優先される", () => {
+  it("コールバックが関数でなくreceivedも不正な場合はコールバックエラーが優先される", () => {
     expect(() =>
-      expect(1).toBeRightWith("not a function" as unknown as () => boolean),
-    ).toThrow("Predicate must be a function");
+      expect(1).toBeRightWith("not a function" as unknown as () => void),
+    ).toThrow("Callback must be a function");
   });
 
-  it("notで反転する", () => {
-    expect(E.right(0)).not.toBeRightWith((n) => n > 1);
-    expect(() => expect(E.right(2)).not.toBeRightWith((n) => n > 1)).toThrow(
-      "Expected Right value not to satisfy predicate",
-    );
+  it(".notはエラーになる", () => {
+    expect(() =>
+      expect(E.right(2)).not.toBeRightWith((n) => {
+        expect(n).toBe(2);
+      }),
+    ).toThrow("does not support .not");
+  });
+
+  it("戻り値は無視してwarnだけ出し、成功扱いになる", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      expect(E.right(2)).toBeRightWith(
+        ((n: number) => n > 1) as unknown as () => void,
+      );
+      expect(warn).toHaveBeenCalledTimes(1);
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  it("Promiseを返したらAsync版への誘導warnを出し、成功扱いになる", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      expect(E.right(2)).toBeRightWith((() =>
+        Promise.resolve()) as unknown as () => void);
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(warn.mock.calls[0]?.[0]).toMatch("toBeRightWithAsync");
+    } finally {
+      warn.mockRestore();
+    }
   });
 });

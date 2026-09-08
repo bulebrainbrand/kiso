@@ -4,60 +4,87 @@ import { describe, expect, expectTypeOf, it, vi } from "vite-plus/test";
 import "../vite-plus.ts";
 
 describe("toBeSomeWith", () => {
-  it("述語の引数はSomeの中身の型に推論される", () => {
+  it("コールバックの引数はSomeの中身の型に推論される", () => {
     expect(O.some(2)).toBeSomeWith((n) => {
       expectTypeOf(n).toEqualTypeOf<number>();
-      return n > 1;
+      expect(n).toBe(2);
     });
   });
 
-  it("述語を満たすSomeを通過する", () => {
-    expect(O.some(2)).toBeSomeWith((n) => n > 1);
+  it("内側のexpectが通るSomeを通過する", () => {
+    expect(O.some(2)).toBeSomeWith((n) => {
+      expect(n).toBe(2);
+    });
   });
 
-  it("述語を満たさないSomeで失敗する", () => {
-    expect(() => expect(O.some(0)).toBeSomeWith((n) => n > 1)).toThrow(
-      "Expected Some value to satisfy predicate",
-    );
+  it("内側のexpect失敗はそのまま伝播する", () => {
+    expect(() =>
+      expect(O.some(1)).toBeSomeWith((n) => {
+        expect(n).toBe(2);
+      }),
+    ).toThrow();
   });
 
-  it("Noneでは述語を呼ばず失敗する", () => {
-    const predicate = vi.fn(() => true);
-    expect(() => expect(O.none).toBeSomeWith(predicate)).toThrow(
+  it("Noneではコールバックを呼ばず失敗する", () => {
+    const callback = vi.fn(() => {});
+    expect(() => expect(O.none).toBeSomeWith(callback)).toThrow(
       "Expected Some, but received None",
     );
-    expect(predicate).not.toHaveBeenCalled();
+    expect(callback).not.toHaveBeenCalled();
   });
 
-  it("Optionでない値では述語を呼ばず失敗する", () => {
-    const predicate = vi.fn(() => true);
-    expect(() => expect(1).toBeSomeWith(predicate)).toThrow(
+  it("Optionでない値ではコールバックを呼ばず失敗する", () => {
+    const callback = vi.fn(() => {});
+    expect(() => expect(1).toBeSomeWith(callback)).toThrow(
       "Received value must be an fp-ts Option",
     );
-    expect(() => expect({}).toBeSomeWith(predicate)).toThrow(
+    expect(() => expect({}).toBeSomeWith(callback)).toThrow(
       "Received value must be an fp-ts Option",
     );
-    expect(predicate).not.toHaveBeenCalled();
+    expect(callback).not.toHaveBeenCalled();
   });
 
-  it("述語が関数でない場合は失敗する", () => {
+  it("コールバックが関数でない場合は失敗する", () => {
     expect(() =>
-      expect(O.some(1)).toBeSomeWith(
-        "not a function" as unknown as () => boolean,
-      ),
-    ).toThrow("Predicate must be a function");
+      expect(O.some(1)).toBeSomeWith("not a function" as unknown as () => void),
+    ).toThrow("Callback must be a function");
   });
 
-  it("述語が関数でなくreceivedも不正な場合は述語エラーが優先される", () => {
+  it("コールバックが関数でなくreceivedも不正な場合はコールバックエラーが優先される", () => {
     expect(() =>
-      expect(1).toBeSomeWith("not a function" as unknown as () => boolean),
-    ).toThrow("Predicate must be a function");
+      expect(1).toBeSomeWith("not a function" as unknown as () => void),
+    ).toThrow("Callback must be a function");
   });
 
-  it("notで反転する", () => {
-    expect(O.some(0)).not.toBeSomeWith((n) => n > 1);
-    expect(() => expect(O.some(2)).not.toBeSomeWith((n) => n > 1)).toThrow(
-      "Expected Some value not to satisfy predicate",
-    );
+  it(".notはエラーになる", () => {
+    expect(() =>
+      expect(O.some(2)).not.toBeSomeWith((n) => {
+        expect(n).toBe(2);
+      }),
+    ).toThrow("does not support .not");
+  });
+
+  it("戻り値は無視してwarnだけ出し、成功扱いになる", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      expect(O.some(2)).toBeSomeWith(
+        ((n: number) => n > 1) as unknown as () => void,
+      );
+      expect(warn).toHaveBeenCalledTimes(1);
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  it("Promiseを返したらAsync版への誘導warnを出し、成功扱いになる", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      expect(O.some(2)).toBeSomeWith((() =>
+        Promise.resolve()) as unknown as () => void);
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(warn.mock.calls[0]?.[0]).toMatch("toBeSomeWithAsync");
+    } finally {
+      warn.mockRestore();
+    }
   });
 });

@@ -104,7 +104,9 @@ describe("YukiCoderService.fetchContest", () => {
     const ctx = makeCtx(() => okJson({ unexpected: true }));
 
     const result = await service.fetchContest(ctx, "1")();
-    expect(result).toBeLeftWith((e) => e.type === "validation_error");
+    expect(result).toBeLeftWith((e) => {
+      expect(e.type).toBe("validation_error");
+    });
   });
 
   it("1問でもテストケース取得に失敗したら全体をエラーにする", async () => {

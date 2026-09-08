@@ -157,7 +157,9 @@ describe("kisoFetch", () => {
       signal: controller.signal,
     })();
     expect(mock).not.toHaveBeenCalled();
-    expect(result).toBeLeftWith((e) => e.type === "abort_error");
+    expect(result).toBeLeftWith((e) => {
+      expect(e.type).toBe("abort_error");
+    });
   });
 
   it("maxRetries: Infinity は有限limitに倒して無限ループしない", async () => {
@@ -265,7 +267,9 @@ describe("kisoFetch", () => {
       { maxRetries: 2, initialDelayMs: 0 },
     )();
     expect(mock).toHaveBeenCalledTimes(1);
-    expect(result).toBeLeftWith((e) => e.type === "network_error");
+    expect(result).toBeLeftWith((e) => {
+      expect(e.type).toBe("network_error");
+    });
   });
 
   it("PUT は冪等なのでリトライする", async () => {

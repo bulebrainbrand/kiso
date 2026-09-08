@@ -126,15 +126,15 @@ describe("Storage 読み取りエラー", () => {
     const root = makeTempRoot();
     fs.writeFileSync(storageFile(root), "{broken");
     const storage = new Storage<TestStore>("store", root);
-    expect(storage.getItem("name")).toBeLeftWith(
-      (e) => e.type === "parse_error",
-    );
-    expect(storage.setItem("name", "x")).toBeLeftWith(
-      (e) => e.type === "parse_error",
-    );
-    expect(storage.removeItem("name")).toBeLeftWith(
-      (e) => e.type === "parse_error",
-    );
+    expect(storage.getItem("name")).toBeLeftWith((e) => {
+      expect(e.type).toBe("parse_error");
+    });
+    expect(storage.setItem("name", "x")).toBeLeftWith((e) => {
+      expect(e.type).toBe("parse_error");
+    });
+    expect(storage.removeItem("name")).toBeLeftWith((e) => {
+      expect(e.type).toBe("parse_error");
+    });
   });
 
   it("スキーマ違反のJSONはparse_error(ネスト/配列値/トップレベル非オブジェクト)", () => {
@@ -149,9 +149,9 @@ describe("Storage 読み取りエラー", () => {
       const root = makeTempRoot();
       fs.writeFileSync(storageFile(root), body);
       const storage = new Storage<TestStore>("store", root);
-      expect(storage.getItem("name")).toBeLeftWith(
-        (e) => e.type === "parse_error",
-      );
+      expect(storage.getItem("name")).toBeLeftWith((e) => {
+        expect(e.type).toBe("parse_error");
+      });
     }
   });
 
@@ -169,9 +169,9 @@ describe("Storage 読み取りエラー", () => {
     vi.spyOn(fs, "readFileSync").mockImplementation(() => {
       throw codeError("EISDIR", "illegal operation on a directory");
     });
-    expect(storage.getItem("name")).toBeLeftWith(
-      (e) => e.type === "read_error" && e.code === "EISDIR",
-    );
+    expect(storage.getItem("name")).toBeLeftWith((e) => {
+      expect(e).toMatchObject({ type: "read_error", code: "EISDIR" });
+    });
   });
 
   it("code付きread失敗はread_errorとして伝播する", () => {
@@ -186,9 +186,9 @@ describe("Storage 読み取りエラー", () => {
       storage.setItem("name", "y"),
       storage.removeItem("name"),
     ]) {
-      expect(result).toBeLeftWith(
-        (e) => e.type === "read_error" && e.code === "EACCES",
-      );
+      expect(result).toBeLeftWith((e) => {
+        expect(e).toMatchObject({ type: "read_error", code: "EACCES" });
+      });
     }
   });
 
@@ -223,9 +223,9 @@ describe("Storage 読み取りエラー", () => {
     vi.spyOn(JSON, "parse").mockImplementation(() => {
       throw new TypeError("weird");
     });
-    expect(storage.getItem("name")).toBeLeftWith(
-      (e) => e.type === "unexpected_error",
-    );
+    expect(storage.getItem("name")).toBeLeftWith((e) => {
+      expect(e.type).toBe("unexpected_error");
+    });
   });
 });
 
@@ -236,7 +236,9 @@ describe("Storage 書き込みエラー", () => {
     const circular: Record<string, unknown> = {};
     circular["self"] = circular;
     expect(storage.setItem("name", circular as unknown as string)).toBeLeftWith(
-      (e) => e.type === "stringify_error",
+      (e) => {
+        expect(e.type).toBe("stringify_error");
+      },
     );
   });
 
@@ -257,9 +259,9 @@ describe("Storage 書き込みエラー", () => {
     const blocker = join(root, "blocker");
     fs.writeFileSync(blocker, "x");
     const storage = new Storage<TestStore>("store", join(blocker, "child"));
-    expect(storage.setItem("name", "x")).toBeLeftWith(
-      (e) => e.type === "read_error" && e.code === "ENOTDIR",
-    );
+    expect(storage.setItem("name", "x")).toBeLeftWith((e) => {
+      expect(e).toMatchObject({ type: "read_error", code: "ENOTDIR" });
+    });
   });
 
   it("code付きwrite失敗はwrite_errorとして伝播する", () => {
@@ -268,9 +270,9 @@ describe("Storage 書き込みエラー", () => {
     vi.spyOn(fs, "writeFileSync").mockImplementationOnce(() => {
       throw codeError("EACCES", "permission denied");
     });
-    expect(storage.setItem("name", "x")).toBeLeftWith(
-      (e) => e.type === "write_error" && e.code === "EACCES",
-    );
+    expect(storage.setItem("name", "x")).toBeLeftWith((e) => {
+      expect(e).toMatchObject({ type: "write_error", code: "EACCES" });
+    });
     // removeItem経路のwrite失敗も同様
     expect(storage.clear()).toBeRight();
     fs.writeFileSync(storageFile(root), `{"name":"a"}`);
@@ -278,9 +280,9 @@ describe("Storage 書き込みエラー", () => {
     vi.spyOn(fs, "writeFileSync").mockImplementationOnce(() => {
       throw codeError("EACCES", "permission denied");
     });
-    expect(fresh.removeItem("name")).toBeLeftWith(
-      (e) => e.type === "write_error",
-    );
+    expect(fresh.removeItem("name")).toBeLeftWith((e) => {
+      expect(e.type).toBe("write_error");
+    });
   });
 
   it("codeなしErrorのwrite失敗はunexpected_error", () => {
@@ -313,9 +315,9 @@ describe("Storage 書き込みエラー", () => {
     vi.spyOn(fs, "mkdirSync").mockImplementation(() => {
       throw codeError("EACCES", "permission denied");
     });
-    expect(storage.setItem("name", "x")).toBeLeftWith(
-      (e) => e.type === "write_error",
-    );
+    expect(storage.setItem("name", "x")).toBeLeftWith((e) => {
+      expect(e.type).toBe("write_error");
+    });
   });
 });
 
@@ -393,9 +395,9 @@ describe("Storage clear", () => {
     vi.spyOn(fs, "rmSync").mockImplementation(() => {
       throw codeError("EACCES", "permission denied");
     });
-    expect(storage.clear()).toBeLeftWith(
-      (e) => e.type === "write_error" && e.code === "EACCES",
-    );
+    expect(storage.clear()).toBeLeftWith((e) => {
+      expect(e).toMatchObject({ type: "write_error", code: "EACCES" });
+    });
   });
 
   it("codeなしErrorのrm失敗はunexpected_error", () => {

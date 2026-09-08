@@ -24,19 +24,49 @@ expect(E.left("a")).toBeLeft("b");
 
 ### toBeLeftWith
 
-`Either`がLeftかつコールバック関数が`true`の場合に成功します。
+`Either`がLeftかつコールバック内の`expect`が全て通る場合に成功します。コールバックの戻り値は無視されます（値を返すとwarnが出ます）。`.not`は使えません。代わりに`toBeRightWith`を使用してください。
 
 ```ts
 // success
-expect(E.left("oops")).toBeLeftWith((s) => s.length > 0);
+expect(E.left("oops")).toBeLeftWith((s) => {
+  expect(s).toBe("oops");
+});
 
-// failed
-expect(E.left("")).toBeLeftWith((s) => s.length > 0);
+// failed（内側のexpect失敗がそのまま伝播する）
+expect(E.left("")).toBeLeftWith((s) => {
+  expect(s).toBe("oops");
+});
+```
+
+### toBeLeftWithAsync
+
+`toBeLeftWith`の非同期版です。`async`コールバックを使う場合はこちらを`await`して使います。syncコールバックも受け付けます。
+
+```ts
+await expect(E.left("oops")).toBeLeftWithAsync(async (s) => {
+  expect(s).toBe("oops");
+});
 ```
 
 ### toBeRightWith
 
-`Either`がRightかつコールバック関数が`true`の場合に成功します。
+`Either`がRightかつコールバック内の`expect`が全て通る場合に成功します。コールバックの戻り値は無視されます（値を返すとwarnが出ます）。`.not`は使えません。代わりに`tobeLeftWith`を使用してください。
+
+```ts
+expect(E.right(2)).toBeRightWith((n) => {
+  expect(n).toBe(2);
+});
+```
+
+### toBeRightWithAsync
+
+`toBeRightWith`の非同期版です。`async`コールバックを使う場合はこちらを`await`して使います。
+
+```ts
+await expect(E.right(2)).toBeRightWithAsync(async (n) => {
+  expect(n).toBe(2);
+});
+```
 
 ### toStrictEqualLeft
 
@@ -70,4 +100,20 @@ expect(E.left({ code: "oops", detail: undefined })).toStrictEqualLeft({
 
 ### toBeSomeWith
 
-`Option`がSomeかつコールバック関数がtrueと等しい場合に成功します
+`Option`がSomeかつコールバック内の`expect`が全て通る場合に成功します。コールバックの戻り値は無視されます（値を返すとwarnが出ます）。`.not`は使えません。代わりに`toBeNone`を使用してください。
+
+```ts
+expect(O.some(2)).toBeSomeWith((n) => {
+  expect(n).toBe(2);
+});
+```
+
+### toBeSomeWithAsync
+
+`toBeSomeWith`の非同期版です。`async`コールバックを使う場合はこちらを`await`して使います。
+
+```ts
+await expect(O.some(2)).toBeSomeWithAsync(async (n) => {
+  expect(n).toBe(2);
+});
+```

@@ -242,6 +242,37 @@ describe("YukiCoderService.isTargetId", () => {
   });
 });
 
+describe("YukiCoderService.parseContestIdFromUrl", () => {
+  it("コンテストURLからIDを抽出する", async () => {
+    const service = new YukiCoderService("yukicoder");
+    const ctx = makeCtx(() => TE.left({ type: "not_found", url: "" }));
+    for (const [url, id] of [
+      ["https://yukicoder.me/contests/100", "100"],
+      ["https://yukicoder.me/contests/100/", "100"],
+      ["https://yukicoder.me/contests/1", "1"],
+    ] as const) {
+      expect(await service.parseContestIdFromUrl(ctx, url)()).toStrictEqualSome(
+        id,
+      );
+    }
+  });
+
+  it("コンテストURLでなければnoneを返す", async () => {
+    const service = new YukiCoderService("yukicoder");
+    const ctx = makeCtx(() => TE.left({ type: "not_found", url: "" }));
+    for (const url of [
+      "https://yukicoder.me/problems/no/1",
+      "https://yukicoder.me",
+      "https://atcoder.jp/contests/abc001",
+      "https://yukicoder.me/contests/abc",
+      "not a url",
+      "",
+    ]) {
+      expect(await service.parseContestIdFromUrl(ctx, url)()).toBeNone();
+    }
+  });
+});
+
 describe("YukiCoderService.getContestDirectory", () => {
   it("コンテストIDからディレクトリパスを返す", async () => {
     const service = new YukiCoderService("yukicoder");

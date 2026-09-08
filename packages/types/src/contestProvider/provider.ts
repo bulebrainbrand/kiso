@@ -1,4 +1,5 @@
 import type * as TE from "fp-ts/TaskEither";
+import type * as TO from "fp-ts/TaskOption";
 import type * as v from "valibot";
 
 import type { Contest } from "../contest.ts";
@@ -43,6 +44,10 @@ export interface ContestProvider<
     ctx: BaseContext<S>,
     id: string,
   ): TE.TaskEither<ProviderError, boolean>;
+  parseContestIdFromUrl(
+    ctx: BaseContext<S>,
+    url: string,
+  ): TO.TaskOption<string>;
   getContestDirectory(
     ctx: BaseContext<S>,
     contest: Contest,

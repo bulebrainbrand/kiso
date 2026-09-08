@@ -16,22 +16,48 @@ describe("toBeRightWith", () => {
   });
 
   it("述語を満たさないRightで失敗する", () => {
-    expect(() => expect(E.right(0)).toBeRightWith((n) => n > 1)).toThrow();
+    expect(() => expect(E.right(0)).toBeRightWith((n) => n > 1)).toThrow(
+      "Expected Right value to satisfy predicate",
+    );
   });
 
   it("Leftでは述語を呼ばず失敗する", () => {
     const predicate = vi.fn(() => true);
-    expect(() => expect(E.left("err")).toBeRightWith(predicate)).toThrow();
+    expect(() => expect(E.left("err")).toBeRightWith(predicate)).toThrow(
+      "Expected Right, but received Left",
+    );
     expect(predicate).not.toHaveBeenCalled();
   });
 
   it("Eitherでない値では述語を呼ばず失敗する", () => {
     const predicate = vi.fn(() => true);
-    expect(() => expect(1).toBeRightWith(predicate)).toThrow();
+    expect(() => expect(1).toBeRightWith(predicate)).toThrow(
+      "Received value must be an fp-ts Either",
+    );
+    expect(() => expect({}).toBeRightWith(predicate)).toThrow(
+      "Received value must be an fp-ts Either",
+    );
     expect(predicate).not.toHaveBeenCalled();
+  });
+
+  it("述語が関数でない場合は失敗する", () => {
+    expect(() =>
+      expect(E.right(1)).toBeRightWith(
+        "not a function" as unknown as () => boolean,
+      ),
+    ).toThrow("Predicate must be a function");
+  });
+
+  it("述語が関数でなくreceivedも不正な場合は述語エラーが優先される", () => {
+    expect(() =>
+      expect(1).toBeRightWith("not a function" as unknown as () => boolean),
+    ).toThrow("Predicate must be a function");
   });
 
   it("notで反転する", () => {
     expect(E.right(0)).not.toBeRightWith((n) => n > 1);
+    expect(() => expect(E.right(2)).not.toBeRightWith((n) => n > 1)).toThrow(
+      "Expected Right value not to satisfy predicate",
+    );
   });
 });

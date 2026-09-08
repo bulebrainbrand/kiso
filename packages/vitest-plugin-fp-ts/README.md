@@ -55,3 +55,19 @@ expect(E.left({ code: "oops", detail: undefined })).toStrictEqualLeft({
 ### toStrictEqualRight
 
 `Either`がRightで、中身と第一引数がvitestの`toStrictEqual`相当で合致した場合に成功します。
+
+### toBeSome
+
+`Option`がSomeの時成功します。`toEqual`相当の比較を行う第一引数が受け取れます
+
+### toBeNone
+
+`Option`がNoneの時成功します。
+
+### toStrictEqualSome
+
+`Option`がSomeで、中身と第一引数が`toStrictEqual`相当で合致した場合に成功します。
+
+### toBeSomeWith
+
+`Option`がSomeかつコールバック関数がtrueと等しい場合に成功します

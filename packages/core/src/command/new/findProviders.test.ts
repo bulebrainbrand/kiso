@@ -1,4 +1,5 @@
 import type { ContestProvider, ProviderError } from "@kiso/types";
+import * as O from "fp-ts/Option";
 import * as TE from "fp-ts/TaskEither";
 import { describe, expect, it } from "vite-plus/test";
 
@@ -23,6 +24,7 @@ const mockProvider = (
   whoami: () => TE.right(name),
   isTargetUrl: () => toTaskEither(isTarget.url),
   isTargetId: () => toTaskEither(isTarget.id),
+  parseContestIdFromUrl: () => async () => O.none,
   getContestDirectory: () => TE.right(`./${name}`),
 });
 

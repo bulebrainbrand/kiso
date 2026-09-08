@@ -8,7 +8,9 @@ import {
   type ValidationError,
 } from "@kiso/types";
 import { pipe } from "fp-ts/function";
+import * as O from "fp-ts/Option";
 import * as TE from "fp-ts/TaskEither";
+import * as TO from "fp-ts/TaskOption";
 import { parse, type HTMLElement } from "node-html-parser";
 import * as v from "valibot";
 
@@ -36,6 +38,22 @@ export class YukiCoderService implements ContestProvider<
     id: string,
   ): TE.TaskEither<ProviderError, boolean> {
     return TE.right(/^\d+$/.test(id));
+  }
+  parseContestIdFromUrl(
+    _ctx: BaseContext<{ API_KEY: string }>,
+    url: string,
+  ): TO.TaskOption<string> {
+    return async () => {
+      try {
+        const parsed = new URL(url);
+        if (parsed.hostname !== "yukicoder.me") return O.none;
+        const match = /^\/contests\/(\d+)\/?$/.exec(parsed.pathname);
+        if (!match?.[1]) return O.none;
+        return O.some(match[1]);
+      } catch {
+        return O.none;
+      }
+    };
   }
   getContestDirectory(
     ctx: BaseContext<{ API_KEY: string }>,

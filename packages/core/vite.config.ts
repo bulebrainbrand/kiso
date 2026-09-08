@@ -16,5 +16,7 @@ export default defineConfig({
   fmt: {},
   test: {
     setupFiles: ["./src/test-setup.ts"],
+    // mocks.test.tsのようなテストヘルパー用ファイル (suiteなし) を許容する
+    passWithNoTests: true,
   },
 });

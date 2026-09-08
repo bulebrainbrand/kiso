@@ -1,4 +1,3 @@
-import { ok } from "assert";
 import { existsSync, readFileSync } from "fs";
 import path from "path";
 
@@ -124,10 +123,12 @@ export function coverageToMarkdown(
   );
   const text = `\
 ## coverage report
-try ${entriesCoverage.length} files. found ${entriesCoverage.length - notfoundFile.length} test file.
-- non-related: ${zeroText(notrelatedFile.length)}
-- failed: ${zeroText(failedFile.length)}
-- success: ${successFile.length}
+try ${entriesCoverage.length} files. found **${entriesCoverage.length - notfoundFile.length}** test file.
+> [!IMPORTANT]
+> - non-related: ${notrelatedFile.length}
+> - failed: ${failedFile.length}
+> - success: ${successFile.length}
+> - full coverage: <mark>${okFile.length}</mark>
 
 in ${entriesCoverage.length} files, ${okFile.length} file(s) is 100% coverage with only same name file
 
@@ -155,7 +156,7 @@ ${ngFile.map(([name, obj]) => `- [${name}](${name}) (${obj.coverage.statements.p
 
 </details>
 
-<details><summary>100% coverage files (${ok.length})!</summary>
+<details><summary>100% coverage files (${okFile.length})!</summary>
 
 ${okFile.map(([name, obj]) => `- [${name}](${name}) (test:[${obj.test}](${obj.test}))`).join("\n")}
 
@@ -164,16 +165,12 @@ ${okFile.map(([name, obj]) => `- [${name}](${name}) (test:[${obj.test}](${obj.te
 ## All test report
 
 - success: ${all.numPassedTests}
-- failed: ${zeroText(all.numFailedTests)}
+- failed: ${all.numFailedTests}
 - success per: ${(all.numTotalTests / all.numPassedTests) * 100}%
 `;
   return text;
 }
 
-const red = (str: string) => `<span style="color: red;">${str}</span>`;
-const green = (str: string) => `<span style="color: green;">${str}</span>`;
-const zeroText = (num: number): string =>
-  num === 0 ? green(num.toString()) : red(num.toString());
 const input1 = process.argv[2] ?? ".kiso-ci/test-result.json";
 const input2 = process.argv[3] ?? ".kiso-ci/all-test.json";
 const headSha = process.argv[4];

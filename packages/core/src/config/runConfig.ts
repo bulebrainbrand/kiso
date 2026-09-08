@@ -3,12 +3,16 @@ import * as TE from "fp-ts/TaskEither";
 import { createConfigJiti } from "./createJiti.ts";
 
 let jiti = createConfigJiti();
+export type RunConfigError = {
+  type: "jiti_error";
+  error: unknown;
+};
 export const runConfig = (
   path: string,
-): TE.TaskEither<{ type: "jiti_error"; error: unknown }, unknown> =>
+): TE.TaskEither<RunConfigError, unknown> =>
   TE.tryCatch(
     () => jiti.import(path),
-    (error): { type: "jiti_error"; error: unknown } => ({
+    (error): RunConfigError => ({
       type: "jiti_error",
       error,
     }),

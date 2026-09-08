@@ -31,6 +31,14 @@ describe("toBeRightWith", () => {
     expect(predicate).not.toHaveBeenCalled();
   });
 
+  it("述語が関数でない場合は失敗する", () => {
+    expect(() =>
+      expect(E.right(1)).toBeRightWith(
+        "not a function" as unknown as () => boolean,
+      ),
+    ).toThrow();
+  });
+
   it("notで反転する", () => {
     expect(E.right(0)).not.toBeRightWith((n) => n > 1);
   });

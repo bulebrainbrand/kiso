@@ -31,6 +31,14 @@ describe("toBeSomeWith", () => {
     expect(predicate).not.toHaveBeenCalled();
   });
 
+  it("述語が関数でない場合は失敗する", () => {
+    expect(() =>
+      expect(O.some(1)).toBeSomeWith(
+        "not a function" as unknown as () => boolean,
+      ),
+    ).toThrow();
+  });
+
   it("notで反転する", () => {
     expect(O.some(0)).not.toBeSomeWith((n) => n > 1);
   });

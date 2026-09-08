@@ -33,6 +33,14 @@ describe("toBeLeftWith", () => {
     expect(predicate).not.toHaveBeenCalled();
   });
 
+  it("述語が関数でない場合は失敗する", () => {
+    expect(() =>
+      expect(E.left("err")).toBeLeftWith(
+        "not a function" as unknown as () => boolean,
+      ),
+    ).toThrow();
+  });
+
   it("notで反転する", () => {
     expect(E.left("")).not.toBeLeftWith((s) => s.length > 0);
   });

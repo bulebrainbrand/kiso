@@ -52,22 +52,22 @@ describe("runConfig", () => {
 
   it("存在しないパスの場合はjiti_errorを返す", async () => {
     const path = join(makeTempRoot(), KISO_CONFIG_FILE_NAME);
-    expect(await runConfig(path)()).toBeLeftWith(
-      (e) => e.type === "jiti_error",
-    );
+    expect(await runConfig(path)()).toBeLeftWith((e) => {
+      expect(e.type).toBe("jiti_error");
+    });
   });
 
   it("シンタックスエラーの場合はjiti_errorを返す", async () => {
     const path = writeConfig(makeTempRoot(), "export default {;\n");
-    expect(await runConfig(path)()).toBeLeftWith(
-      (e) => e.type === "jiti_error",
-    );
+    expect(await runConfig(path)()).toBeLeftWith((e) => {
+      expect(e.type).toBe("jiti_error");
+    });
   });
 
   it("評価時にthrowする場合はjiti_errorを返す", async () => {
     const path = writeConfig(makeTempRoot(), 'throw new Error("boom");\n');
-    expect(await runConfig(path)()).toBeLeftWith(
-      (e) => e.type === "jiti_error",
-    );
+    expect(await runConfig(path)()).toBeLeftWith((e) => {
+      expect(e.type).toBe("jiti_error");
+    });
   });
 });

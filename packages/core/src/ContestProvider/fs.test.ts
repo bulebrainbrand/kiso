@@ -33,9 +33,9 @@ describe("kisoFs", () => {
 
   it("存在しないreadFileはENOENTのread_error", () => {
     const root = makeTempRoot();
-    expect(kisoFs.readFile(join(root, "missing.txt"))).toBeLeftWith(
-      (e) => e.type === "read_error" && e.code === "ENOENT",
-    );
+    expect(kisoFs.readFile(join(root, "missing.txt"))).toBeLeftWith((e) => {
+      expect(e).toMatchObject({ type: "read_error", code: "ENOENT" });
+    });
   });
 
   it("mkdirはネストしたディレクトリを作成する", () => {
@@ -59,9 +59,9 @@ describe("kisoFs", () => {
 
   it("存在しないstatはENOENTのread_error", () => {
     const root = makeTempRoot();
-    expect(kisoFs.stat(join(root, "missing"))).toBeLeftWith(
-      (e) => e.type === "read_error" && e.code === "ENOENT",
-    );
+    expect(kisoFs.stat(join(root, "missing"))).toBeLeftWith((e) => {
+      expect(e).toMatchObject({ type: "read_error", code: "ENOENT" });
+    });
   });
 
   it("rm後はexistsがfalseになる", () => {
@@ -87,16 +87,18 @@ describe("kisoFs", () => {
     const root = makeTempRoot();
     expect(
       kisoFs.writeFile(join(root, "no-such-dir", "f.txt"), "x"),
-    ).toBeLeftWith((e) => e.type === "write_error" && e.code === "ENOENT");
+    ).toBeLeftWith((e) => {
+      expect(e).toMatchObject({ type: "write_error", code: "ENOENT" });
+    });
   });
 
   it("ファイルを親に持つmkdirはENOTDIRのwrite_error", () => {
     const root = makeTempRoot();
     const file = join(root, "f.txt");
     expect(kisoFs.writeFile(file, "x")).toBeRight();
-    expect(kisoFs.mkdir(join(file, "child"))).toBeLeftWith(
-      (e) => e.type === "write_error" && e.code === "ENOTDIR",
-    );
+    expect(kisoFs.mkdir(join(file, "child"))).toBeLeftWith((e) => {
+      expect(e).toMatchObject({ type: "write_error", code: "ENOTDIR" });
+    });
   });
 });
 

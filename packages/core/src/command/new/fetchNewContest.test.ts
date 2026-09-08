@@ -11,13 +11,11 @@ describe("fetchNewContest", () => {
 
     const result = await fetchNewContest(yukicoder, "100")();
 
-    expect(result).toBeRightWith(
-      (value) =>
-        value.provider === yukicoder
-        && value.contestId === "100"
-        && JSON.stringify(value.contest)
-          === JSON.stringify({ id: "100", probrems: [] }),
-    );
+    expect(result).toBeRightWith((value) => {
+      expect(value.provider).toBe(yukicoder);
+      expect(value.contestId).toBe("100");
+      expect(value.contest).toEqual({ id: "100", probrems: [] });
+    });
   });
 
   it("fetchの失敗はそのまま返す", async () => {

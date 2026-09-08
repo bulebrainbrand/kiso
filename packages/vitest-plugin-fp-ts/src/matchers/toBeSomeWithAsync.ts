@@ -2,32 +2,24 @@ import * as O from "fp-ts/Option";
 // oxlint-disable-next-line vite-plus/prefer-vite-plus-imports
 import type { MatcherResult, MatcherState } from "vitest";
 
-export interface ToBeSomeWithMatcher<T = any> {
-  toBeSomeWith(
+export interface ToBeSomeWithAsyncMatcher<T = any> {
+  toBeSomeWithAsync(
     callback: (
       value: 0 extends 1 & T ? any : [T] extends [O.Option<infer A>] ? A : any,
-    ) => void,
-  ): void;
+    ) => void | Promise<void>,
+  ): Promise<void>;
 }
 
-function isThenable(value: unknown): value is PromiseLike<unknown> {
-  return (
-    typeof value === "object"
-    && value !== null
-    && typeof (value as { then?: unknown }).then === "function"
-  );
-}
-
-export function toBeSomeWith(
+export async function toBeSomeWithAsync(
   this: MatcherState,
   received: unknown,
-  callback: (value: any) => void,
-): MatcherResult {
+  callback: (value: any) => void | Promise<void>,
+): Promise<Extract<MatcherResult, { pass: boolean }>> {
   const { matcherHint, printReceived } = this.utils;
-  const hint = matcherHint(".toBeSomeWith", "received", "callback");
+  const hint = matcherHint(".toBeSomeWithAsync", "received", "callback");
   if (this.isNot) {
     throw new Error(
-      `${hint}\n\n.toBeSomeWith does not support .not. Use .toBeSomeWithAsync with await or assert the inner value directly.`,
+      `${hint}\n\n.toBeSomeWithAsync does not support .not. Assert the inner value directly.`,
     );
   }
   if (typeof callback !== "function") {
@@ -48,14 +40,10 @@ export function toBeSomeWith(
   }
   const option = received as O.Option<unknown>;
   if (O.isSome(option)) {
-    const returned = callback(option.value) as unknown;
-    if (isThenable(returned)) {
+    const resolved = (await callback(option.value)) as unknown;
+    if (resolved !== undefined) {
       console.warn(
-        "[toBeSomeWith] callback returned a Promise. Use toBeSomeWithAsync with await instead. Return value is ignored.",
-      );
-    } else if (returned !== undefined) {
-      console.warn(
-        "[toBeSomeWith] callback return value is ignored. Use expect() inside the callback instead of returning a value.",
+        "[toBeSomeWithAsync] callback return value is ignored. Use expect() inside the callback instead of returning a value.",
       );
     }
     return {

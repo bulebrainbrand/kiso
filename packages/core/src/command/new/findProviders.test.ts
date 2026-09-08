@@ -2,7 +2,7 @@ import type { ContestProvider, ProviderError } from "@kiso/types";
 import * as TE from "fp-ts/TaskEither";
 import { describe, expect, it } from "vite-plus/test";
 
-import { findProvidersById, findProvidersByURL } from "./findProvider.ts";
+import { findProvidersById, findProvidersByURL } from "./findProviders.ts";
 
 const toTaskEither = (
   value: boolean | "error",

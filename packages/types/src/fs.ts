@@ -4,7 +4,7 @@ import type {
   FileReadError,
   FileWriteError,
   UnexpectedError,
-} from "./storage.ts";
+} from "./contestProvider/storage.ts";
 
 export type FsError = FileReadError | FileWriteError | UnexpectedError;
 

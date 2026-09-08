@@ -3,17 +3,13 @@ import type * as TO from "fp-ts/TaskOption";
 import type * as v from "valibot";
 
 import type { Contest } from "../contest.ts";
+import type { ValidationError } from "../errors.ts";
 import type { BaseContext } from "./context.ts";
 import type { FetchError } from "./fetch.ts";
 import type { LoginSchema } from "./login.ts";
 import type { JSONPrimitive, StorageError, StorageType } from "./storage.ts";
 
 export type AuthError = { type: "auth_error"; reason: "invalid_credentials" };
-
-export type ValidationError = {
-  type: "validation_error";
-  issues: v.GenericIssue[];
-};
 
 export type ProviderError =
   | StorageError

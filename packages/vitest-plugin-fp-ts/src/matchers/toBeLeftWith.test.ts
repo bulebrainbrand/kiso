@@ -34,6 +34,9 @@ describe("toBeLeftWith", () => {
     expect(() => expect(null).toBeLeftWith(predicate)).toThrow(
       "Received value must be an fp-ts Either",
     );
+    expect(() => expect({}).toBeLeftWith(predicate)).toThrow(
+      "Received value must be an fp-ts Either",
+    );
     expect(predicate).not.toHaveBeenCalled();
   });
 
@@ -42,6 +45,12 @@ describe("toBeLeftWith", () => {
       expect(E.left("err")).toBeLeftWith(
         "not a function" as unknown as () => boolean,
       ),
+    ).toThrow("Predicate must be a function");
+  });
+
+  it("述語が関数でなくreceivedも不正な場合は述語エラーが優先される", () => {
+    expect(() =>
+      expect(null).toBeLeftWith("not a function" as unknown as () => boolean),
     ).toThrow("Predicate must be a function");
   });
 

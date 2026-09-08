@@ -40,6 +40,9 @@ describe("toBeSome", () => {
     expect(() => expect(null).toBeSome()).toThrow(
       "Received value must be an fp-ts Option",
     );
+    expect(() => expect({}).toBeSome()).toThrow(
+      "Received value must be an fp-ts Option",
+    );
   });
 
   it("notで反転する", () => {

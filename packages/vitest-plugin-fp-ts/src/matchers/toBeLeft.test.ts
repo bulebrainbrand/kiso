@@ -40,6 +40,9 @@ describe("toBeLeft", () => {
     expect(() => expect(undefined).toBeLeft()).toThrow(
       "Received value must be an fp-ts Either",
     );
+    expect(() => expect({}).toBeLeft()).toThrow(
+      "Received value must be an fp-ts Either",
+    );
   });
 
   it("notで反転する", () => {

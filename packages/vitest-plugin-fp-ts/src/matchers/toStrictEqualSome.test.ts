@@ -26,6 +26,9 @@ describe("toStrictEqualSome", () => {
     expect(() => expect(1).toStrictEqualSome(1)).toThrow(
       "Received value must be an fp-ts Option",
     );
+    expect(() => expect({}).toStrictEqualSome(1)).toThrow(
+      "Received value must be an fp-ts Option",
+    );
   });
 
   it("notで反転する", () => {

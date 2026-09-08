@@ -27,6 +27,9 @@ describe("toBeNone", () => {
     expect(() => expect(undefined).toBeNone()).toThrow(
       "Received value must be an fp-ts Option",
     );
+    expect(() => expect({}).toBeNone()).toThrow(
+      "Received value must be an fp-ts Option",
+    );
   });
 
   it("notで反転する", () => {

@@ -34,6 +34,9 @@ describe("toBeSomeWith", () => {
     expect(() => expect(1).toBeSomeWith(predicate)).toThrow(
       "Received value must be an fp-ts Option",
     );
+    expect(() => expect({}).toBeSomeWith(predicate)).toThrow(
+      "Received value must be an fp-ts Option",
+    );
     expect(predicate).not.toHaveBeenCalled();
   });
 
@@ -42,6 +45,12 @@ describe("toBeSomeWith", () => {
       expect(O.some(1)).toBeSomeWith(
         "not a function" as unknown as () => boolean,
       ),
+    ).toThrow("Predicate must be a function");
+  });
+
+  it("述語が関数でなくreceivedも不正な場合は述語エラーが優先される", () => {
+    expect(() =>
+      expect(1).toBeSomeWith("not a function" as unknown as () => boolean),
     ).toThrow("Predicate must be a function");
   });
 

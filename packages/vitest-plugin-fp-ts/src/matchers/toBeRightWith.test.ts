@@ -56,5 +56,8 @@ describe("toBeRightWith", () => {
 
   it("notで反転する", () => {
     expect(E.right(0)).not.toBeRightWith((n) => n > 1);
+    expect(() => expect(E.right(2)).not.toBeRightWith((n) => n > 1)).toThrow(
+      "Expected Right value not to satisfy predicate",
+    );
   });
 });

@@ -33,5 +33,8 @@ describe("toStrictEqualLeft", () => {
 
   it("notで反転する", () => {
     expect(E.left("a")).not.toStrictEqualLeft("b");
+    expect(() => expect(E.left("a")).not.toStrictEqualLeft("a")).toThrow(
+      "Expected Left not to strictly equal",
+    );
   });
 });

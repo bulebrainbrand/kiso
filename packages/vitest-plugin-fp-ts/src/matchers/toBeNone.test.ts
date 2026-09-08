@@ -34,5 +34,8 @@ describe("toBeNone", () => {
 
   it("notで反転する", () => {
     expect(O.some(1)).not.toBeNone();
+    expect(() => expect(O.none).not.toBeNone()).toThrow(
+      "Expected value not to be None",
+    );
   });
 });

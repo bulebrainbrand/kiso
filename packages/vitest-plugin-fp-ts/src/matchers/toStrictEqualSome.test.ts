@@ -33,5 +33,8 @@ describe("toStrictEqualSome", () => {
 
   it("notで反転する", () => {
     expect(O.some(1)).not.toStrictEqualSome(2);
+    expect(() => expect(O.some(1)).not.toStrictEqualSome(1)).toThrow(
+      "Expected Some not to strictly equal",
+    );
   });
 });

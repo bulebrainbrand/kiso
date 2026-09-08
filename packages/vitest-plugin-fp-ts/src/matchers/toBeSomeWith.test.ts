@@ -56,5 +56,8 @@ describe("toBeSomeWith", () => {
 
   it("notで反転する", () => {
     expect(O.some(0)).not.toBeSomeWith((n) => n > 1);
+    expect(() => expect(O.some(2)).not.toBeSomeWith((n) => n > 1)).toThrow(
+      "Expected Some value not to satisfy predicate",
+    );
   });
 });

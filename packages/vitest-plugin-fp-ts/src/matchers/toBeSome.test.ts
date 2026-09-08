@@ -47,5 +47,11 @@ describe("toBeSome", () => {
 
   it("notで反転する", () => {
     expect(O.none).not.toBeSome();
+    expect(() => expect(O.some(1)).not.toBeSome()).toThrow(
+      "Expected value not to be Some",
+    );
+    expect(() => expect(O.some(1)).not.toBeSome(1)).toThrow(
+      "Expected Some not to equal",
+    );
   });
 });

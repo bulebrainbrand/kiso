@@ -47,5 +47,11 @@ describe("toBeRight", () => {
 
   it("notで反転する", () => {
     expect(E.left("err")).not.toBeRight();
+    expect(() => expect(E.right(1)).not.toBeRight()).toThrow(
+      "Expected value not to be Right",
+    );
+    expect(() => expect(E.right(1)).not.toBeRight(1)).toThrow(
+      "Expected Right not to equal",
+    );
   });
 });

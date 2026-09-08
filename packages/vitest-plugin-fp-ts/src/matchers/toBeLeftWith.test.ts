@@ -56,5 +56,8 @@ describe("toBeLeftWith", () => {
 
   it("notで反転する", () => {
     expect(E.left("")).not.toBeLeftWith((s) => s.length > 0);
+    expect(() =>
+      expect(E.left("oops")).not.toBeLeftWith((s) => s.length > 0),
+    ).toThrow("Expected Left value not to satisfy predicate");
   });
 });

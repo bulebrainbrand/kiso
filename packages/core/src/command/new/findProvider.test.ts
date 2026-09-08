@@ -1,5 +1,4 @@
 import type { ContestProvider, ProviderError } from "@kiso/types";
-import * as O from "fp-ts/Option";
 import * as TE from "fp-ts/TaskEither";
 import { describe, expect, it } from "vite-plus/test";
 
@@ -37,7 +36,7 @@ describe("findProvidersByURL", () => {
       atcoder,
     ])();
 
-    expect(result).toStrictEqual(O.some([yukicoder]));
+    expect(result).toStrictEqualSome([yukicoder]);
   });
 
   it("マッチするproviderがなければnoneを返す", async () => {
@@ -48,7 +47,7 @@ describe("findProvidersByURL", () => {
 
     const result = await findProvidersByURL("https://example.com", providers)();
 
-    expect(result).toStrictEqual(O.none);
+    expect(result).toBeNone();
   });
 
   it("判定に失敗したproviderは対象外として残りを返す", async () => {
@@ -60,7 +59,7 @@ describe("findProvidersByURL", () => {
       yukicoder,
     ])();
 
-    expect(result).toStrictEqual(O.some([yukicoder]));
+    expect(result).toStrictEqualSome([yukicoder]);
   });
 
   it("全ての判定が失敗したらnoneを返す", async () => {
@@ -74,13 +73,13 @@ describe("findProvidersByURL", () => {
       providers,
     )();
 
-    expect(result).toStrictEqual(O.none);
+    expect(result).toBeNone();
   });
 
   it("providersが空ならnoneを返す", async () => {
     const result = await findProvidersByURL("https://yukicoder.me", [])();
 
-    expect(result).toStrictEqual(O.none);
+    expect(result).toBeNone();
   });
 });
 
@@ -91,7 +90,7 @@ describe("findProvidersById", () => {
 
     const result = await findProvidersById("123", [yukicoder, atcoder])();
 
-    expect(result).toStrictEqual(O.some([yukicoder]));
+    expect(result).toStrictEqualSome([yukicoder]);
   });
 
   it("マッチするproviderがなければnoneを返す", async () => {
@@ -102,7 +101,7 @@ describe("findProvidersById", () => {
 
     const result = await findProvidersById("abc100", providers)();
 
-    expect(result).toStrictEqual(O.none);
+    expect(result).toBeNone();
   });
 
   it("判定に失敗したproviderは対象外として残りを返す", async () => {
@@ -111,12 +110,12 @@ describe("findProvidersById", () => {
 
     const result = await findProvidersById("123", [broken, yukicoder])();
 
-    expect(result).toStrictEqual(O.some([yukicoder]));
+    expect(result).toStrictEqualSome([yukicoder]);
   });
 
   it("providersが空ならnoneを返す", async () => {
     const result = await findProvidersById("123", [])();
 
-    expect(result).toStrictEqual(O.none);
+    expect(result).toBeNone();
   });
 });

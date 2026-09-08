@@ -13,7 +13,7 @@ const vitest = await createVitest("test", {
 });
 const isTestFile = (file: string): boolean =>
   vitest.projects.some((project) => project.matchesTestGlob(file));
-const ignorePatterns = ["vite.config.ts", "!*.ts"];
+const ignorePatterns = ["**/vite.config.ts", "!*.ts"];
 const toTestFile = (file: string): string =>
   path.join(
     path.dirname(file),
@@ -24,9 +24,7 @@ const toTestFile = (file: string): string =>
 const targetFiles = fullStr
   .split("\n")
   .filter((str) => str.length !== 0)
-  .filter((str) =>
-    ignorePatterns.every((pattern) => !matchesGlob(str, pattern)),
-  )
+  .filter((str) => !ignorePatterns.some((pattern) => matchesGlob(str, pattern)))
   .map((str) => path.resolve(str))
   .filter((str) => !isTestFile(str));
 const testFiles = targetFiles.map((str) => toTestFile(str));

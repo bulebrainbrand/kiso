@@ -30,7 +30,7 @@ jobs:
         if: steps.pr.outputs.number != ''
         uses: actions/checkout@v7
         with:
-          ref: ${{ github.event.workflow_run.head_sha }}
+          ref: main
           sparse-checkout: .github/scripts
 
       - name: setup node

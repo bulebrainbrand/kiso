@@ -1,4 +1,4 @@
-import { languagePluginSchema } from "@kiso/types";
+import { contestProviderSchema, languagePluginSchema } from "@kiso/types";
 import * as v from "valibot";
 
 const uniqueStringOrStringArraySchema = v.pipe(
@@ -35,6 +35,7 @@ const langDefaultSchema = v.pipe(
 
 export const ConfigSchema = v.pipe(
   v.object({
+    provider: v.array(contestProviderSchema),
     lang: v.object({
       plugins: v.array(languagePluginSchema),
       default: langDefaultSchema,

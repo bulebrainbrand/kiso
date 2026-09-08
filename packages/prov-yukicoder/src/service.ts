@@ -31,6 +31,12 @@ export class YukiCoderService implements ContestProvider<
   ): TE.TaskEither<ProviderError, boolean> {
     return TE.right(url.startsWith("https://yukicoder.me"));
   }
+  isTargetId(
+    ctx: BaseContext<{ API_KEY: string }>,
+    id: string,
+  ): TE.TaskEither<ProviderError, boolean> {
+    return TE.right(/^\d+$/.test(id));
+  }
   getContestDirectory(
     ctx: BaseContext<{ API_KEY: string }>,
     contest: Contest,

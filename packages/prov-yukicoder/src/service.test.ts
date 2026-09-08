@@ -219,6 +219,29 @@ describe("YukiCoderService.isTargetUrl", () => {
   });
 });
 
+describe("YukiCoderService.isTargetId", () => {
+  it("数値のコンテストIDならtrueを返す", async () => {
+    const service = new YukiCoderService("yukicoder");
+    const ctx = makeCtx(() => TE.left({ type: "not_found", url: "" }));
+    for (const id of ["1", "100", "123"]) {
+      expect(await service.isTargetId(ctx, id)()).toBeRight(true);
+    }
+  });
+
+  it("数値でないIDならfalseを返す", async () => {
+    const service = new YukiCoderService("yukicoder");
+    const ctx = makeCtx(() => TE.left({ type: "not_found", url: "" }));
+    for (const id of [
+      "abc100",
+      "1a",
+      "",
+      "https://yukicoder.me/contests/100",
+    ]) {
+      expect(await service.isTargetId(ctx, id)()).toBeRight(false);
+    }
+  });
+});
+
 describe("YukiCoderService.getContestDirectory", () => {
   it("コンテストIDからディレクトリパスを返す", async () => {
     const service = new YukiCoderService("yukicoder");

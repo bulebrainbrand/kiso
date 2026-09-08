@@ -20,8 +20,8 @@ export type ProviderError =
   | AuthError
   | ValidationError;
 export interface ContestProvider<
-  S extends StorageType,
-  LA extends Record<string, JSONPrimitive>,
+  S extends StorageType = StorageType,
+  LA extends Record<string, JSONPrimitive> = Record<string, JSONPrimitive>,
   LO = LA,
 > {
   readonly name: string;
@@ -38,6 +38,10 @@ export interface ContestProvider<
   isTargetUrl(
     ctx: BaseContext<S>,
     url: string,
+  ): TE.TaskEither<ProviderError, boolean>;
+  isTargetId(
+    ctx: BaseContext<S>,
+    id: string,
   ): TE.TaskEither<ProviderError, boolean>;
   getContestDirectory(
     ctx: BaseContext<S>,

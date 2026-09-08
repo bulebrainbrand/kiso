@@ -16,18 +16,24 @@ describe("toBeRightWith", () => {
   });
 
   it("述語を満たさないRightで失敗する", () => {
-    expect(() => expect(E.right(0)).toBeRightWith((n) => n > 1)).toThrow();
+    expect(() => expect(E.right(0)).toBeRightWith((n) => n > 1)).toThrow(
+      "Expected Right value to satisfy predicate",
+    );
   });
 
   it("Leftでは述語を呼ばず失敗する", () => {
     const predicate = vi.fn(() => true);
-    expect(() => expect(E.left("err")).toBeRightWith(predicate)).toThrow();
+    expect(() => expect(E.left("err")).toBeRightWith(predicate)).toThrow(
+      "Expected Right, but received Left",
+    );
     expect(predicate).not.toHaveBeenCalled();
   });
 
   it("Eitherでない値では述語を呼ばず失敗する", () => {
     const predicate = vi.fn(() => true);
-    expect(() => expect(1).toBeRightWith(predicate)).toThrow();
+    expect(() => expect(1).toBeRightWith(predicate)).toThrow(
+      "Received value must be an fp-ts Either",
+    );
     expect(predicate).not.toHaveBeenCalled();
   });
 
@@ -36,7 +42,7 @@ describe("toBeRightWith", () => {
       expect(E.right(1)).toBeRightWith(
         "not a function" as unknown as () => boolean,
       ),
-    ).toThrow();
+    ).toThrow("Predicate must be a function");
   });
 
   it("notで反転する", () => {

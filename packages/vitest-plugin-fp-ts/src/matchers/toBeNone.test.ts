@@ -9,14 +9,24 @@ describe("toBeNone", () => {
   });
 
   it("Someで失敗する", () => {
-    expect(() => expect(O.some(1)).toBeNone()).toThrow();
-    expect(() => expect(O.some(undefined)).toBeNone()).toThrow();
+    expect(() => expect(O.some(1)).toBeNone()).toThrow(
+      "Expected None, but received Some",
+    );
+    expect(() => expect(O.some(undefined)).toBeNone()).toThrow(
+      "Expected None, but received Some",
+    );
   });
 
   it("Optionでない値で失敗する", () => {
-    expect(() => expect(1).toBeNone()).toThrow();
-    expect(() => expect(null).toBeNone()).toThrow();
-    expect(() => expect(undefined).toBeNone()).toThrow();
+    expect(() => expect(1).toBeNone()).toThrow(
+      "Received value must be an fp-ts Option",
+    );
+    expect(() => expect(null).toBeNone()).toThrow(
+      "Received value must be an fp-ts Option",
+    );
+    expect(() => expect(undefined).toBeNone()).toThrow(
+      "Received value must be an fp-ts Option",
+    );
   });
 
   it("notで反転する", () => {

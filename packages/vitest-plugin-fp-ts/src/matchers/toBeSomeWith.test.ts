@@ -16,18 +16,24 @@ describe("toBeSomeWith", () => {
   });
 
   it("述語を満たさないSomeで失敗する", () => {
-    expect(() => expect(O.some(0)).toBeSomeWith((n) => n > 1)).toThrow();
+    expect(() => expect(O.some(0)).toBeSomeWith((n) => n > 1)).toThrow(
+      "Expected Some value to satisfy predicate",
+    );
   });
 
   it("Noneでは述語を呼ばず失敗する", () => {
     const predicate = vi.fn(() => true);
-    expect(() => expect(O.none).toBeSomeWith(predicate)).toThrow();
+    expect(() => expect(O.none).toBeSomeWith(predicate)).toThrow(
+      "Expected Some, but received None",
+    );
     expect(predicate).not.toHaveBeenCalled();
   });
 
   it("Optionでない値では述語を呼ばず失敗する", () => {
     const predicate = vi.fn(() => true);
-    expect(() => expect(1).toBeSomeWith(predicate)).toThrow();
+    expect(() => expect(1).toBeSomeWith(predicate)).toThrow(
+      "Received value must be an fp-ts Option",
+    );
     expect(predicate).not.toHaveBeenCalled();
   });
 
@@ -36,7 +42,7 @@ describe("toBeSomeWith", () => {
       expect(O.some(1)).toBeSomeWith(
         "not a function" as unknown as () => boolean,
       ),
-    ).toThrow();
+    ).toThrow("Predicate must be a function");
   });
 
   it("notで反転する", () => {

@@ -1,29 +1,7 @@
-# Vite+ Monorepo Starter
+# Kiso
 
-A starter for creating a Vite+ monorepo.
+kisoは競技プログラミングのためのツールで、より拡張性が高く、多くの言語に対応し、gitフレンドリーなのになりたいやつです。
 
-## Development
+## 現状:
 
-- Check everything is ready:
-
-```bash
-vp run ready
-```
-
-- Run the tests:
-
-```bash
-vp run -r test
-```
-
-- Build the monorepo:
-
-```bash
-vp run -r build
-```
-
-- Run the development server:
-
-```bash
-vp run dev
-```
+全体の大まかな設計が完成。fp-tsとvalibotを共通のライブラリとして活用

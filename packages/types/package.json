@@ -38,9 +38,5 @@
   "dependencies": {
     "fp-ts": "catalog:",
     "valibot": "catalog:"
-  },
-  "devDependencies": {
-    "vite": "catalog:",
-    "vite-plus": "catalog:"
   }
 }

@@ -2,7 +2,7 @@
   "name": "@kiso/prov-yukicoder",
   "version": "0.0.0",
   "description": "A tool for kiso to use yukicoder",
-  "homepage": "https://github.com/bulebrainbrand/yukicoder#readme",
+  "homepage": "https://github.com/bulebrainbrand/kiso/packages/yukicoder#readme",
   "bugs": {
     "url": "https://github.com/bulebrainbrand/kiso/issues"
   },

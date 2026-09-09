@@ -2,7 +2,7 @@
   "name": "@kiso/core",
   "version": "0.0.0",
   "description": "A tool for Competitive Programming",
-  "homepage": "https://github.com/bulebrainbrand/core#readme",
+  "homepage": "https://github.com/bulebrainbrand/kiso/packages/core#readme",
   "bugs": {
     "url": "https://github.com/bulebrainbrand/kiso/issues"
   },

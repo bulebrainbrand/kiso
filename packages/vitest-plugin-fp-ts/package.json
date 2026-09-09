@@ -34,8 +34,6 @@
   },
   "devDependencies": {
     "fp-ts": "catalog:",
-    "vite": "catalog:",
-    "vite-plus": "catalog:",
     "vitest": "^4.1.11"
   },
   "peerDependencies": {

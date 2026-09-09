@@ -38,8 +38,6 @@
   "devDependencies": {
     "@kiso/types": "workspace:*",
     "@kiso/vitest-plugin-fp-ts": "workspace:*",
-    "@types/node": "catalog:",
-    "vite": "catalog:",
-    "vite-plus": "catalog:"
+    "@types/node": "catalog:"
   }
 }

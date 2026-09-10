@@ -1,8 +1,8 @@
 {
-  "name": "@kiso/core",
+  "name": "@kiso/lang-typescript",
   "version": "0.0.0",
   "description": "A tool for Competitive Programming",
-  "homepage": "https://github.com/bulebrainbrand/kiso/packages/core#readme",
+  "homepage": "https://github.com/bulebrainbrand/kiso/packages/lang-typescript#readme",
   "bugs": {
     "url": "https://github.com/bulebrainbrand/kiso/issues"
   },

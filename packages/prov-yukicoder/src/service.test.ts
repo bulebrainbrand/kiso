@@ -2,6 +2,7 @@ import { join, resolve } from "node:path";
 
 import type { BaseContext } from "@kiso/types";
 import type { FetchError } from "@kiso/types";
+import * as E from "fp-ts/Either";
 import * as TE from "fp-ts/TaskEither";
 import { describe, expect, it } from "vite-plus/test";
 
@@ -422,5 +423,135 @@ describe("YukiCoderService.getSingleProbremDirectory", () => {
     if (result._tag === "Right") {
       expect(resolve(result.right).startsWith(resolve("test-root"))).toBe(true);
     }
+  });
+});
+
+describe("YukiCoderService.createSingleProbremDirectory", () => {
+  const makeFsCtx = () => {
+    const mkdirCalls: string[] = [];
+    const written = new Map<string, string>();
+    const base = makeCtx(() => TE.left({ type: "not_found", url: "" }));
+    const ctx = {
+      ...base,
+      fs: {
+        ...base.fs,
+        providerDir: {
+          rootDir: "test-root",
+          mkdir: (p: string) => {
+            mkdirCalls.push(p);
+            return E.right(undefined);
+          },
+          writeFile: (p: string, content: string) => {
+            written.set(p, content);
+            return E.right(undefined);
+          },
+        },
+      },
+    } as unknown as YukicoderCtx;
+    return { ctx, mkdirCalls, written };
+  };
+
+  it("single dir直下の__test_case__にa_in/a_outを書き込む", async () => {
+    const service = new YukiCoderService("yukicoder");
+    const { ctx, mkdirCalls, written } = makeFsCtx();
+    const probrem = {
+      id: "101",
+      name: "1",
+      testcases: [{ name: "a", input: "1\n", output: "2\n" }],
+    };
+
+    const result = await service.createSingleProbremDirectory(
+      ctx,
+      { id: "1", probrems: [] },
+      probrem,
+    )();
+
+    const dir = join("test-root", "single_101");
+    const testCaseDir = join(dir, "__test_case__");
+    expect(result).toBeRight(dir);
+    expect(mkdirCalls).toContain(dir);
+    expect(mkdirCalls).toContain(testCaseDir);
+    expect(written.get(join(testCaseDir, "a_in.txt"))).toBe("1\n");
+    expect(written.get(join(testCaseDir, "a_out.txt"))).toBe("2\n");
+  });
+
+  it("テストケース名をサニタイズして書き込む", async () => {
+    const service = new YukiCoderService("yukicoder");
+    const { ctx, written } = makeFsCtx();
+
+    const result = await service.createSingleProbremDirectory(
+      ctx,
+      { id: "1", probrems: [] },
+      {
+        id: "101",
+        name: "1",
+        testcases: [{ name: "a/b", input: "in", output: "out" }],
+      },
+    )();
+
+    const testCaseDir = join("test-root", "single_101", "__test_case__");
+    expect(result).toBeRight(join("test-root", "single_101"));
+    expect(written.get(join(testCaseDir, "a_b_in.txt"))).toBe("in");
+    expect(written.get(join(testCaseDir, "a_b_out.txt"))).toBe("out");
+  });
+
+  it("空テストケースでも__test_case__ディレクトリを作る", async () => {
+    const service = new YukiCoderService("yukicoder");
+    const { ctx, mkdirCalls, written } = makeFsCtx();
+
+    const result = await service.createSingleProbremDirectory(
+      ctx,
+      { id: "1", probrems: [] },
+      { id: "101", name: "1", testcases: [] },
+    )();
+
+    const dir = join("test-root", "single_101");
+    expect(result).toBeRight(dir);
+    expect(mkdirCalls).toContain(join(dir, "__test_case__"));
+    expect(written.size).toBe(0);
+  });
+});
+
+describe("YukiCoderService.createContestDirectory", () => {
+  it("writeTestCases共有後も問題IDサブディレクトリに書き込む", async () => {
+    const service = new YukiCoderService("yukicoder");
+    const mkdirCalls: string[] = [];
+    const written = new Map<string, string>();
+    const base = makeCtx(() => TE.left({ type: "not_found", url: "" }));
+    const ctx = {
+      ...base,
+      fs: {
+        ...base.fs,
+        providerDir: {
+          rootDir: "test-root",
+          mkdir: (p: string) => {
+            mkdirCalls.push(p);
+            return E.right(undefined);
+          },
+          writeFile: (p: string, content: string) => {
+            written.set(p, content);
+            return E.right(undefined);
+          },
+        },
+      },
+    } as unknown as YukicoderCtx;
+
+    const result = await service.createContestDirectory(ctx, {
+      id: "1",
+      probrems: [
+        {
+          id: "101",
+          name: "1",
+          testcases: [{ name: "a", input: "1\n", output: "2\n" }],
+        },
+      ],
+    })();
+
+    const dir = join("test-root", "1");
+    const testCaseDir = join(dir, "__test_case__", "101");
+    expect(result).toBeRight(dir);
+    expect(mkdirCalls).toContain(testCaseDir);
+    expect(written.get(join(testCaseDir, "a_in.txt"))).toBe("1\n");
+    expect(written.get(join(testCaseDir, "a_out.txt"))).toBe("2\n");
   });
 });

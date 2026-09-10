@@ -37,7 +37,7 @@ export class YukiCoderService implements ContestProvider<
   }
   getSingleProbremDirectory(
     ctx: BaseContext<{ API_KEY: string }>,
-    contest: Contest,
+    _contest: Contest,
     probrem: Probrem,
   ): TE.TaskEither<ProviderError, string> {
     return TE.right(
@@ -78,11 +78,18 @@ export class YukiCoderService implements ContestProvider<
       this.getTestCaseDirectory(contestPath),
       sanitizeSegment(probrem.id, "unknown"),
     );
+    return this.writeTestCases(ctx, testCaseDir, probrem.testcases);
+  }
+  private writeTestCases(
+    ctx: BaseContext<{ API_KEY: string }>,
+    testCaseDir: string,
+    testcases: Probrem["testcases"],
+  ): TE.TaskEither<ProviderError, void> {
     return pipe(
       TE.fromEither(ctx.fs.providerDir.mkdir(testCaseDir)),
       TE.chainW(() =>
         pipe(
-          probrem.testcases.flatMap((testcase, idx) => {
+          testcases.flatMap((testcase, idx) => {
             const safeName = sanitizeSegment(
               testcase.name,
               `kiso_placeholder_${idx}`,
@@ -118,6 +125,13 @@ export class YukiCoderService implements ContestProvider<
       TE.chainW((dir) =>
         pipe(
           TE.fromEither(ctx.fs.providerDir.mkdir(dir)),
+          TE.chainW(() =>
+            this.writeTestCases(
+              ctx,
+              this.getTestCaseDirectory(dir),
+              probrem.testcases,
+            ),
+          ),
           TE.map(() => dir),
         ),
       ),

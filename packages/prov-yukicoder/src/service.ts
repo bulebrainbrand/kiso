@@ -18,6 +18,7 @@ import * as TO from "fp-ts/TaskOption";
 import { parse, type HTMLElement } from "node-html-parser";
 import * as v from "valibot";
 
+import { sanitizeSegment, sanitizeTestCaseName } from "./sanitize.ts";
 import {
   yukicoderContestSchema,
   type YukicoderContestProblem,
@@ -40,7 +41,10 @@ export class YukiCoderService implements ContestProvider<
     probrem: Probrem,
   ): TE.TaskEither<ProviderError, string> {
     return TE.right(
-      path.join(ctx.fs.providerDir.rootDir, "single_" + probrem.id),
+      path.join(
+        ctx.fs.providerDir.rootDir,
+        "single_" + sanitizeSegment(probrem.id, "unknown"),
+      ),
     );
   }
   createContestDirectory(
@@ -72,26 +76,32 @@ export class YukiCoderService implements ContestProvider<
   ): TE.TaskEither<ProviderError, void> {
     const testCaseDir = path.join(
       this.getTestCaseDirectory(contestPath),
-      probrem.id,
+      sanitizeSegment(probrem.id, "unknown"),
     );
     return pipe(
       TE.fromEither(ctx.fs.providerDir.mkdir(testCaseDir)),
       TE.chainW(() =>
         pipe(
-          probrem.testcases.flatMap((testcase) => [
-            TE.fromEither(
-              ctx.fs.providerDir.writeFile(
-                path.join(testCaseDir, `${testcase.name}_in.txt`),
-                testcase.input,
+          probrem.testcases.flatMap((testcase, idx) => {
+            const safeName = sanitizeSegment(
+              testcase.name,
+              `kiso_placeholder_${idx}`,
+            );
+            return [
+              TE.fromEither(
+                ctx.fs.providerDir.writeFile(
+                  path.join(testCaseDir, `${safeName}_in.txt`),
+                  testcase.input,
+                ),
               ),
-            ),
-            TE.fromEither(
-              ctx.fs.providerDir.writeFile(
-                path.join(testCaseDir, `${testcase.name}_out.txt`),
-                testcase.output,
+              TE.fromEither(
+                ctx.fs.providerDir.writeFile(
+                  path.join(testCaseDir, `${safeName}_out.txt`),
+                  testcase.output,
+                ),
               ),
-            ),
-          ]),
+            ];
+          }),
           TE.sequenceArray,
         ),
       ),
@@ -145,7 +155,12 @@ export class YukiCoderService implements ContestProvider<
     ctx: BaseContext<{ API_KEY: string }>,
     contest: Contest,
   ): TE.TaskEither<ProviderError, string> {
-    return TE.right(path.join(ctx.fs.providerDir.rootDir, contest.id));
+    return TE.right(
+      path.join(
+        ctx.fs.providerDir.rootDir,
+        sanitizeSegment(contest.id, "unknown"),
+      ),
+    );
   }
   loginSchema = v.object({ API_KEY: v.string() });
   login(ctx: YukicoderCtx, credentials: YukicoderLoginOutput) {
@@ -155,9 +170,10 @@ export class YukiCoderService implements ContestProvider<
     ctx: YukicoderCtx,
     contestId: string,
   ): TE.TaskEither<ProviderError, Contest> {
+    const safeContestId = sanitizeSegment(contestId, "unknown");
     return pipe(
       ctx.fetch(
-        `https://yukicoder.me/api/v1/contest/id/${contestId}`,
+        `https://yukicoder.me/api/v1/contest/id/${encodeURIComponent(safeContestId)}`,
         undefined,
         {
           maxRetries: 3,
@@ -193,7 +209,7 @@ export class YukiCoderService implements ContestProvider<
           TE.map(
             (allTestcases) =>
               ({
-                id: contestId,
+                id: safeContestId,
                 probrems: problems.map((probrem, i) => ({
                   id: String(probrem.ProblemId),
                   name: String(probrem.No),
@@ -239,14 +255,20 @@ export class YukiCoderService implements ContestProvider<
     //     h6
     //     pre # output
     const testcases: TestCase[] = [];
+    const usedNames = new Set<string>();
     for (const [i, ele] of sampleElements.entries()) {
       const pres = ele.querySelectorAll("pre");
       const input = pres[0]?.textContent;
       const output = pres[1]?.textContent;
       if (input === undefined || output === undefined) continue;
-      const name =
-        ele.querySelector("span")?.textContent.trim()
-        || `kiso_placeholder_${i}`;
+      const rawName = ele.querySelector("span")?.textContent ?? "";
+      let name = sanitizeTestCaseName(rawName, i);
+      if (usedNames.has(name)) {
+        let n = 2;
+        while (usedNames.has(`${name}_${n}`)) n++;
+        name = `${name}_${n}`;
+      }
+      usedNames.add(name);
       testcases.push({ name, input, output });
     }
     return testcases;

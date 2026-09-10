@@ -1,4 +1,4 @@
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 
 import type { BaseContext } from "@kiso/types";
 import type { FetchError } from "@kiso/types";
@@ -198,6 +198,99 @@ describe("YukiCoderService.fetchContest", () => {
       "https://yukicoder.me/problems/no/null",
     );
   });
+
+  it("../を含むコンテストIDはサニタイズして取得する", async () => {
+    const service = new YukiCoderService("yukicoder");
+    const requestedUrls: string[] = [];
+    const ctx = makeCtx((url) => {
+      requestedUrls.push(url);
+      if (url === "https://yukicoder.me/api/v1/contest/id/.._evil") {
+        return okJson({ ...contestJson, Problems: [contestJson.Problems[0]] });
+      }
+      if (url === "https://yukicoder.me/problems/no/1") {
+        return okHtml(problemHtml([["sample1", "1\n", "1\n"]]));
+      }
+      return TE.left({ type: "not_found", url });
+    });
+
+    const result = await service.fetchContest(ctx, "../evil")();
+    expect(result).toBeRight({
+      id: ".._evil",
+      probrems: [
+        {
+          id: "101",
+          name: "1",
+          testcases: [{ name: "sample1", input: "1\n", output: "1\n" }],
+        },
+      ],
+    });
+    expect(requestedUrls).toContain(
+      "https://yukicoder.me/api/v1/contest/id/.._evil",
+    );
+  });
+
+  it("URL特殊文字を含むコンテストIDはエンコードして取得する", async () => {
+    const service = new YukiCoderService("yukicoder");
+    const requestedUrls: string[] = [];
+    const ctx = makeCtx((url) => {
+      requestedUrls.push(url);
+      if (url === "https://yukicoder.me/api/v1/contest/id/a_b%3Fc%23d") {
+        return okJson({ ...contestJson, Problems: [contestJson.Problems[0]] });
+      }
+      if (url === "https://yukicoder.me/problems/no/1") {
+        return okHtml(problemHtml([["sample1", "1\n", "1\n"]]));
+      }
+      return TE.left({ type: "not_found", url });
+    });
+
+    const result = await service.fetchContest(ctx, "a/b?c#d")();
+    expect(result).toBeRight({
+      id: "a_b?c#d",
+      probrems: [
+        {
+          id: "101",
+          name: "1",
+          testcases: [{ name: "sample1", input: "1\n", output: "1\n" }],
+        },
+      ],
+    });
+  });
+
+  it("サンプル名の../や/はサニタイズし重複は採番する", async () => {
+    const service = new YukiCoderService("yukicoder");
+    const ctx = makeCtx((url) => {
+      if (url === "https://yukicoder.me/api/v1/contest/id/1") {
+        return okJson({ ...contestJson, Problems: [contestJson.Problems[0]] });
+      }
+      return okHtml(
+        problemHtml([
+          ["../../evil", "in1", "out1"],
+          ["a/b", "in2", "out2"],
+          ["..", "in3", "out3"],
+          ["sample1", "in4", "out4"],
+          ["sample1", "in5", "out5"],
+        ]),
+      );
+    });
+
+    const result = await service.fetchContest(ctx, "1")();
+    expect(result).toBeRight({
+      id: "1",
+      probrems: [
+        {
+          id: "101",
+          name: "1",
+          testcases: [
+            { name: ".._.._evil", input: "in1", output: "out1" },
+            { name: "a_b", input: "in2", output: "out2" },
+            { name: "kiso_placeholder_2", input: "in3", output: "out3" },
+            { name: "sample1", input: "in4", output: "out4" },
+            { name: "sample1_2", input: "in5", output: "out5" },
+          ],
+        },
+      ],
+    });
+  });
 });
 
 describe("YukiCoderService.isTargetUrl", () => {
@@ -288,5 +381,46 @@ describe("YukiCoderService.getContestDirectory", () => {
     expect(
       await service.getContestDirectory(ctx, { id: "123", probrems: [] })(),
     ).toBeRight(join("test-root", "123"));
+  });
+
+  it("../を含むIDはサニタイズしてroot配下に留める", async () => {
+    const service = new YukiCoderService("yukicoder");
+    const ctx = makeCtx(() => TE.left({ type: "not_found", url: "" }));
+
+    const cases = [
+      ["../evil", ".._evil"],
+      ["a/b", "a_b"],
+      ["..", "unknown"],
+      ["", "unknown"],
+    ] as const;
+    for (const [id, safe] of cases) {
+      const result = await service.getContestDirectory(ctx, {
+        id,
+        probrems: [],
+      })();
+      expect(result).toBeRight(join("test-root", safe));
+      if (result._tag === "Right") {
+        expect(resolve(result.right).startsWith(resolve("test-root"))).toBe(
+          true,
+        );
+      }
+    }
+  });
+});
+
+describe("YukiCoderService.getSingleProbremDirectory", () => {
+  it("../を含む問題IDはサニタイズしてroot配下に留める", async () => {
+    const service = new YukiCoderService("yukicoder");
+    const ctx = makeCtx(() => TE.left({ type: "not_found", url: "" }));
+
+    const result = await service.getSingleProbremDirectory(
+      ctx,
+      { id: "1", probrems: [] },
+      { id: "../../evil", name: "1", testcases: [] },
+    )();
+    expect(result).toBeRight(join("test-root", "single_.._.._evil"));
+    if (result._tag === "Right") {
+      expect(resolve(result.right).startsWith(resolve("test-root"))).toBe(true);
+    }
   });
 });

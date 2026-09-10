@@ -35,7 +35,6 @@
   },
   "devDependencies": {
     "@kiso/types": "workspace:*",
-    "@kiso/vitest-plugin-fp-ts": "workspace:*",
-    "@types/node": "catalog:"
+    "@kiso/vitest-plugin-fp-ts": "workspace:*"
   }
 }

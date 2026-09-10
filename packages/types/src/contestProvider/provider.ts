@@ -1,6 +1,5 @@
 import type * as TE from "fp-ts/TaskEither";
 import type * as TO from "fp-ts/TaskOption";
-import type * as v from "valibot";
 
 import type { Contest } from "../contest.ts";
 import type { ValidationError } from "../errors.ts";

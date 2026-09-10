@@ -1,7 +1,11 @@
+import path from "path";
+
 import {
+  TEST_CASE_DIR_NAME,
   type BaseContext,
   type Contest,
   type ContestProvider,
+  type Probrem,
   type ProviderError,
   type TestCase,
   type UnexpectedError,
@@ -14,6 +18,7 @@ import * as TO from "fp-ts/TaskOption";
 import { parse, type HTMLElement } from "node-html-parser";
 import * as v from "valibot";
 
+import { sanitizeSegment, sanitizeTestCaseName } from "./sanitize.ts";
 import {
   yukicoderContestSchema,
   type YukicoderContestProblem,
@@ -27,6 +32,111 @@ export class YukiCoderService implements ContestProvider<
   { API_KEY: string }
 > {
   constructor(readonly name: string) {}
+  private getTestCaseDirectory(contestDir: string): string {
+    return path.join(contestDir, TEST_CASE_DIR_NAME);
+  }
+  getSingleProbremDirectory(
+    ctx: BaseContext<{ API_KEY: string }>,
+    _contest: Contest,
+    probrem: Probrem,
+  ): TE.TaskEither<ProviderError, string> {
+    return TE.right(
+      path.join(
+        ctx.fs.providerDir.rootDir,
+        "single_" + sanitizeSegment(probrem.id, "unknown"),
+      ),
+    );
+  }
+  createContestDirectory(
+    ctx: BaseContext<{ API_KEY: string }>,
+    contest: Contest,
+  ): TE.TaskEither<ProviderError, string> {
+    return pipe(
+      this.getContestDirectory(ctx, contest),
+      TE.chainW((dir) =>
+        pipe(
+          TE.fromEither(ctx.fs.providerDir.mkdir(dir)),
+          TE.chainW(() =>
+            pipe(
+              contest.probrems.map((probrem) =>
+                this.createProbremTestCase(ctx, dir, probrem),
+              ),
+              TE.sequenceArray,
+            ),
+          ),
+          TE.map(() => dir),
+        ),
+      ),
+    );
+  }
+  private createProbremTestCase(
+    ctx: BaseContext<{ API_KEY: string }>,
+    contestPath: string,
+    probrem: Probrem,
+  ): TE.TaskEither<ProviderError, void> {
+    const testCaseDir = path.join(
+      this.getTestCaseDirectory(contestPath),
+      sanitizeSegment(probrem.id, "unknown"),
+    );
+    return this.writeTestCases(ctx, testCaseDir, probrem.testcases);
+  }
+  private writeTestCases(
+    ctx: BaseContext<{ API_KEY: string }>,
+    testCaseDir: string,
+    testcases: Probrem["testcases"],
+  ): TE.TaskEither<ProviderError, void> {
+    return pipe(
+      TE.fromEither(ctx.fs.providerDir.mkdir(testCaseDir)),
+      TE.chainW(() =>
+        pipe(
+          testcases.flatMap((testcase, idx) => {
+            const safeName = sanitizeSegment(
+              testcase.name,
+              `kiso_placeholder_${idx}`,
+            );
+            return [
+              TE.fromEither(
+                ctx.fs.providerDir.writeFile(
+                  path.join(testCaseDir, `${safeName}_in.txt`),
+                  testcase.input,
+                ),
+              ),
+              TE.fromEither(
+                ctx.fs.providerDir.writeFile(
+                  path.join(testCaseDir, `${safeName}_out.txt`),
+                  testcase.output,
+                ),
+              ),
+            ];
+          }),
+          TE.sequenceArray,
+        ),
+      ),
+      TE.map(() => {}),
+    );
+  }
+  createSingleProbremDirectory(
+    ctx: BaseContext<{ API_KEY: string }>,
+    contest: Contest,
+    probrem: Probrem,
+  ): TE.TaskEither<ProviderError, string> {
+    return pipe(
+      this.getSingleProbremDirectory(ctx, contest, probrem),
+      TE.chainW((dir) =>
+        pipe(
+          TE.fromEither(ctx.fs.providerDir.mkdir(dir)),
+          TE.chainW(() =>
+            this.writeTestCases(
+              ctx,
+              this.getTestCaseDirectory(dir),
+              probrem.testcases,
+            ),
+          ),
+          TE.map(() => dir),
+        ),
+      ),
+    );
+  }
   isTargetUrl(
     ctx: BaseContext<{ API_KEY: string }>,
     url: string,
@@ -59,7 +169,12 @@ export class YukiCoderService implements ContestProvider<
     ctx: BaseContext<{ API_KEY: string }>,
     contest: Contest,
   ): TE.TaskEither<ProviderError, string> {
-    return TE.right(`./${contest.id}`);
+    return TE.right(
+      path.join(
+        ctx.fs.providerDir.rootDir,
+        sanitizeSegment(contest.id, "unknown"),
+      ),
+    );
   }
   loginSchema = v.object({ API_KEY: v.string() });
   login(ctx: YukicoderCtx, credentials: YukicoderLoginOutput) {
@@ -71,7 +186,7 @@ export class YukiCoderService implements ContestProvider<
   ): TE.TaskEither<ProviderError, Contest> {
     return pipe(
       ctx.fetch(
-        `https://yukicoder.me/api/v1/contest/id/${contestId}`,
+        `https://yukicoder.me/api/v1/contest/id/${encodeURIComponent(contestId)}`,
         undefined,
         {
           maxRetries: 3,
@@ -153,14 +268,20 @@ export class YukiCoderService implements ContestProvider<
     //     h6
     //     pre # output
     const testcases: TestCase[] = [];
+    const usedNames = new Set<string>();
     for (const [i, ele] of sampleElements.entries()) {
       const pres = ele.querySelectorAll("pre");
       const input = pres[0]?.textContent;
       const output = pres[1]?.textContent;
       if (input === undefined || output === undefined) continue;
-      const name =
-        ele.querySelector("span")?.textContent.trim()
-        || `kiso_placeholder_${i}`;
+      const rawName = ele.querySelector("span")?.textContent ?? "";
+      let name = sanitizeTestCaseName(rawName, i);
+      if (usedNames.has(name)) {
+        let n = 2;
+        while (usedNames.has(`${name}_${n}`)) n++;
+        name = `${name}_${n}`;
+      }
+      usedNames.add(name);
       testcases.push({ name, input, output });
     }
     return testcases;

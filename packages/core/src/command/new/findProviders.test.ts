@@ -26,6 +26,11 @@ const mockProvider = (
   isTargetId: () => toTaskEither(isTarget.id),
   parseContestIdFromUrl: () => async () => O.none,
   getContestDirectory: () => TE.right(`./${name}`),
+  getSingleProbremDirectory: (_ctx, contest, probrem) =>
+    TE.right(`./${contest.id}_${probrem.id}`),
+  createContestDirectory: (_ctx, contest) => TE.right(`./${contest.id}`),
+  createSingleProbremDirectory: (_ctx, contest, probrem) =>
+    TE.right(`./${contest.id}_${probrem.id}`),
 });
 
 describe("findProvidersByURL", () => {
@@ -33,10 +38,11 @@ describe("findProvidersByURL", () => {
     const yukicoder = mockProvider("yukicoder", { url: true, id: true });
     const atcoder = mockProvider("atcoder", { url: false, id: false });
 
-    const result = await findProvidersByURL("https://yukicoder.me", [
-      yukicoder,
-      atcoder,
-    ])();
+    const result = await findProvidersByURL(
+      "https://yukicoder.me",
+      [yukicoder, atcoder],
+      "/workspace",
+    )();
 
     expect(result).toStrictEqualSome([yukicoder]);
   });
@@ -47,7 +53,11 @@ describe("findProvidersByURL", () => {
       mockProvider("atcoder", { url: false, id: false }),
     ];
 
-    const result = await findProvidersByURL("https://example.com", providers)();
+    const result = await findProvidersByURL(
+      "https://example.com",
+      providers,
+      "/workspace",
+    )();
 
     expect(result).toBeNone();
   });
@@ -56,10 +66,11 @@ describe("findProvidersByURL", () => {
     const broken = mockProvider("broken", { url: "error", id: "error" });
     const yukicoder = mockProvider("yukicoder", { url: true, id: true });
 
-    const result = await findProvidersByURL("https://yukicoder.me", [
-      broken,
-      yukicoder,
-    ])();
+    const result = await findProvidersByURL(
+      "https://yukicoder.me",
+      [broken, yukicoder],
+      "/workspace",
+    )();
 
     expect(result).toStrictEqualSome([yukicoder]);
   });
@@ -73,13 +84,18 @@ describe("findProvidersByURL", () => {
     const result = await findProvidersByURL(
       "https://yukicoder.me",
       providers,
+      "/workspace",
     )();
 
     expect(result).toBeNone();
   });
 
   it("providersが空ならnoneを返す", async () => {
-    const result = await findProvidersByURL("https://yukicoder.me", [])();
+    const result = await findProvidersByURL(
+      "https://yukicoder.me",
+      [],
+      "/workspace",
+    )();
 
     expect(result).toBeNone();
   });
@@ -90,7 +106,11 @@ describe("findProvidersById", () => {
     const yukicoder = mockProvider("yukicoder", { url: false, id: true });
     const atcoder = mockProvider("atcoder", { url: true, id: false });
 
-    const result = await findProvidersById("123", [yukicoder, atcoder])();
+    const result = await findProvidersById(
+      "123",
+      [yukicoder, atcoder],
+      "/workspace",
+    )();
 
     expect(result).toStrictEqualSome([yukicoder]);
   });
@@ -101,7 +121,7 @@ describe("findProvidersById", () => {
       mockProvider("atcoder", { url: true, id: false }),
     ];
 
-    const result = await findProvidersById("abc100", providers)();
+    const result = await findProvidersById("abc100", providers, "/workspace")();
 
     expect(result).toBeNone();
   });
@@ -110,13 +130,17 @@ describe("findProvidersById", () => {
     const broken = mockProvider("broken", { url: "error", id: "error" });
     const yukicoder = mockProvider("yukicoder", { url: true, id: true });
 
-    const result = await findProvidersById("123", [broken, yukicoder])();
+    const result = await findProvidersById(
+      "123",
+      [broken, yukicoder],
+      "/workspace",
+    )();
 
     expect(result).toStrictEqualSome([yukicoder]);
   });
 
   it("providersが空ならnoneを返す", async () => {
-    const result = await findProvidersById("123", [])();
+    const result = await findProvidersById("123", [], "/workspace")();
 
     expect(result).toBeNone();
   });

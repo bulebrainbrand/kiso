@@ -5,7 +5,11 @@ import { resolveContestId } from "./resolveContestId.ts";
 
 describe("resolveContestId", () => {
   it("非URL入力はそのままcontestIdとして返す", async () => {
-    const result = await resolveContestId(mockProvider("yukicoder"), "100")();
+    const result = await resolveContestId(
+      mockProvider("yukicoder"),
+      "100",
+      "/workspace",
+    )();
 
     expect(result).toStrictEqualRight("100");
   });
@@ -14,6 +18,7 @@ describe("resolveContestId", () => {
     const result = await resolveContestId(
       mockProvider("yukicoder", { parseId: "100" }),
       "https://yukicoder.me/contests/100",
+      "/workspace",
     )();
 
     expect(result).toStrictEqualRight("100");
@@ -23,6 +28,7 @@ describe("resolveContestId", () => {
     const result = await resolveContestId(
       mockProvider("yukicoder", { parseId: null }),
       "https://yukicoder.me/problems/no/1",
+      "/workspace",
     )();
 
     expect(result).toStrictEqualLeft({

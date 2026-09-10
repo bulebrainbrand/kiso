@@ -47,6 +47,11 @@ export const mockProvider = (
     parseContestIdFromUrl: () => async () =>
       parseId === null ? O.none : O.some(parseId),
     getContestDirectory: () => TE.right(`./${name}`),
+    getSingleProbremDirectory: (_ctx, contest, probrem) =>
+      TE.right(`./${contest.id}_${probrem.id}`),
+    createContestDirectory: (_ctx, contest) => TE.right(`./${contest.id}`),
+    createSingleProbremDirectory: (_ctx, contest, probrem) =>
+      TE.right(`./${contest.id}_${probrem.id}`),
   };
 };
 

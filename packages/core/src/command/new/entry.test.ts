@@ -20,7 +20,12 @@ describe("executeNewCommand", () => {
     const yukicoder = mockProvider("yukicoder", {
       contest: { id: "100", probrems: [] },
     });
-    mockReadConfig.mockReturnValue(TE.right(mockConfig([yukicoder])));
+    mockReadConfig.mockReturnValue(
+      TE.right({
+        config: mockConfig([yukicoder]),
+        workspaceRoot: "/workspace",
+      }),
+    );
 
     const result = await executeNewCommand(
       { id: "100", provider: "yukicoder" },
@@ -40,7 +45,12 @@ describe("executeNewCommand", () => {
       parseId: "100",
       contest: { id: "100", probrems: [] },
     });
-    mockReadConfig.mockReturnValue(TE.right(mockConfig([yukicoder])));
+    mockReadConfig.mockReturnValue(
+      TE.right({
+        config: mockConfig([yukicoder]),
+        workspaceRoot: "/workspace",
+      }),
+    );
 
     const result = await executeNewCommand(
       { id: "https://yukicoder.me/contests/100" },
@@ -58,7 +68,12 @@ describe("executeNewCommand", () => {
       parseId: "100",
       contest: { id: "100", probrems: [] },
     });
-    mockReadConfig.mockReturnValue(TE.right(mockConfig([yukicoder])));
+    mockReadConfig.mockReturnValue(
+      TE.right({
+        config: mockConfig([yukicoder]),
+        workspaceRoot: "/workspace",
+      }),
+    );
 
     const result = await executeNewCommand(
       { id: "https://yukicoder.me/contests/100", provider: "yukicoder" },
@@ -75,7 +90,12 @@ describe("executeNewCommand", () => {
       isTargetUrl: true,
       parseId: null,
     });
-    mockReadConfig.mockReturnValue(TE.right(mockConfig([yukicoder])));
+    mockReadConfig.mockReturnValue(
+      TE.right({
+        config: mockConfig([yukicoder]),
+        workspaceRoot: "/workspace",
+      }),
+    );
 
     const result = await executeNewCommand(
       { id: "https://yukicoder.me/problems/no/1" },
@@ -92,7 +112,9 @@ describe("executeNewCommand", () => {
   it("複数providerがヒットしたらprovider_ambiguousを返す", async () => {
     const a = mockProvider("a", { isTargetId: true });
     const b = mockProvider("b", { isTargetId: true });
-    mockReadConfig.mockReturnValue(TE.right(mockConfig([a, b])));
+    mockReadConfig.mockReturnValue(
+      TE.right({ config: mockConfig([a, b]), workspaceRoot: "/workspace" }),
+    );
 
     const result = await executeNewCommand({ id: "100" }, "/workspace")();
 
@@ -104,7 +126,12 @@ describe("executeNewCommand", () => {
 
   it("fetchContestの失敗はそのまま返す", async () => {
     const yukicoder = mockProvider("yukicoder", { contest: "fetch_error" });
-    mockReadConfig.mockReturnValue(TE.right(mockConfig([yukicoder])));
+    mockReadConfig.mockReturnValue(
+      TE.right({
+        config: mockConfig([yukicoder]),
+        workspaceRoot: "/workspace",
+      }),
+    );
 
     const result = await executeNewCommand(
       { id: "100", provider: "yukicoder" },
@@ -116,7 +143,10 @@ describe("executeNewCommand", () => {
 
   it("存在しないprovider名ならprovider_not_foundを返す", async () => {
     mockReadConfig.mockReturnValue(
-      TE.right(mockConfig([mockProvider("yukicoder")])),
+      TE.right({
+        config: mockConfig([mockProvider("yukicoder")]),
+        workspaceRoot: "/workspace",
+      }),
     );
 
     const result = await executeNewCommand(
@@ -132,7 +162,10 @@ describe("executeNewCommand", () => {
 
   it("ヒットするproviderがなければprovider_not_hitを返す", async () => {
     mockReadConfig.mockReturnValue(
-      TE.right(mockConfig([mockProvider("yukicoder")])),
+      TE.right({
+        config: mockConfig([mockProvider("yukicoder")]),
+        workspaceRoot: "/workspace",
+      }),
     );
 
     const result = await executeNewCommand({ id: "100" }, "/workspace")();

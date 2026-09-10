@@ -8,8 +8,12 @@ import type { NewCommandSuccess } from "./entry.ts";
 export const fetchNewContest = (
   provider: ContestProvider,
   contestId: string,
+  workspaceRoot: string,
 ): TE.TaskEither<ProviderError, NewCommandSuccess> =>
   pipe(
-    provider.fetchContest(createCtxFromProvider(provider), contestId),
+    provider.fetchContest(
+      createCtxFromProvider(provider, workspaceRoot),
+      contestId,
+    ),
     TE.map((contest) => ({ contest, contestId, provider })),
   );

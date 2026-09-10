@@ -8,3 +8,4 @@ export * from "./contestProvider/fetch.ts";
 export * from "./fs.ts";
 export * from "./languagePlugin/index.ts";
 export * from "./errors.ts";
+export * from "./constants.ts";

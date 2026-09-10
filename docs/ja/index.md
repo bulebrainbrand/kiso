@@ -6,7 +6,7 @@ workspace/
   */ # コンテストプロバイダ名
     */ # コンテスト名
       kiso.contest.json
-      testcases/
+      __test_case__/
         input/
           <test-id>.txt
         output/
@@ -29,7 +29,7 @@ workspace/
       Cargo.toml
   */ # コンテストプロバイダ名
     */ # コンテスト名
-      .testcases/
+      __test_case__/
         input/
           <test-id>.txt
         output/
@@ -71,7 +71,7 @@ workspace/
       tsconfig.json
   */ # コンテストプロバイダ名
     */ # コンテスト名
-      .testcases/
+      __test_case__/
         input/
           <test-id>.txt
         output/

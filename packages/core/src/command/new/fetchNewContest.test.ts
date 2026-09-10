@@ -9,7 +9,7 @@ describe("fetchNewContest", () => {
       contest: { id: "100", probrems: [] },
     });
 
-    const result = await fetchNewContest(yukicoder, "100")();
+    const result = await fetchNewContest(yukicoder, "100", "/workspace")();
 
     expect(result).toBeRightWith((value) => {
       expect(value.provider).toBe(yukicoder);
@@ -22,6 +22,7 @@ describe("fetchNewContest", () => {
     const result = await fetchNewContest(
       mockProvider("yukicoder", { contest: "fetch_error" }),
       "100",
+      "/workspace",
     )();
 
     expect(result).toStrictEqualLeft({ type: "not_found", url: "100" });

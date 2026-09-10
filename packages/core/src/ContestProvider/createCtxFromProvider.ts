@@ -4,6 +4,7 @@ import { createCtx } from "./createCtx.ts";
 
 export const createCtxFromProvider = (
   provider: ContestProvider,
+  workspaceRoot: string,
 ): BaseContext<StorageType> => {
-  return createCtx(provider.name, provider.name);
+  return createCtx(provider.name, workspaceRoot);
 };

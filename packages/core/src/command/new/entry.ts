@@ -47,14 +47,16 @@ export const executeNewCommand = (
 ): TE.TaskEither<NewCommandError, NewCommandSuccess> =>
   pipe(
     readConfig(cwd),
-    TE.chainW((config) =>
+    TE.chainW(({ config, workspaceRoot }) =>
       pipe(
-        resolveProviders(config, id, providerName),
+        resolveProviders(config, id, providerName, workspaceRoot),
         TE.chainW(ensureSingleProvider),
         TE.chainW((provider) =>
           pipe(
-            resolveContestId(provider, id),
-            TE.chainW((contestId) => fetchNewContest(provider, contestId)),
+            resolveContestId(provider, id, workspaceRoot),
+            TE.chainW((contestId) =>
+              fetchNewContest(provider, contestId, workspaceRoot),
+            ),
           ),
         ),
       ),

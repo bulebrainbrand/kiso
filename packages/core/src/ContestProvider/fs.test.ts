@@ -5,7 +5,7 @@ import { join } from "node:path";
 
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 
-import { kisoFs } from "./fs.ts";
+import { KisoFs } from "./fs.ts";
 
 const tmpRoots: string[] = [];
 
@@ -24,8 +24,18 @@ afterEach(() => {
 });
 
 describe("kisoFs", () => {
+  it("rootDirを保持する", () => {
+    const root = makeTempRoot();
+    expect(new KisoFs(root).rootDir).toBe(root);
+  });
+
+  it("相対パスのrootDirではTypeErrorを投げる", () => {
+    expect(() => new KisoFs("relative/path")).toThrow(TypeError);
+  });
+
   it("writeFileした内容をreadFileで読める", () => {
     const root = makeTempRoot();
+    const kisoFs = new KisoFs(root);
     const file = join(root, "hello.txt");
     expect(kisoFs.writeFile(file, "hello")).toBeRight();
     expect(kisoFs.readFile(file)).toBeRight("hello");
@@ -33,6 +43,7 @@ describe("kisoFs", () => {
 
   it("存在しないreadFileはENOENTのread_error", () => {
     const root = makeTempRoot();
+    const kisoFs = new KisoFs(root);
     expect(kisoFs.readFile(join(root, "missing.txt"))).toBeLeftWith((e) => {
       expect(e).toMatchObject({ type: "read_error", code: "ENOENT" });
     });
@@ -40,6 +51,7 @@ describe("kisoFs", () => {
 
   it("mkdirはネストしたディレクトリを作成する", () => {
     const root = makeTempRoot();
+    const kisoFs = new KisoFs(root);
     const nested = join(root, "a", "b", "c");
     expect(kisoFs.mkdir(nested)).toBeRight();
     expect(kisoFs.exists(nested)).toBe(true);
@@ -51,6 +63,7 @@ describe("kisoFs", () => {
 
   it("statはファイルとディレクトリを区別する", () => {
     const root = makeTempRoot();
+    const kisoFs = new KisoFs(root);
     const file = join(root, "f.txt");
     expect(kisoFs.writeFile(file, "x")).toBeRight();
     expect(kisoFs.stat(file)).toBeRight({ isFile: true, isDirectory: false });
@@ -59,6 +72,7 @@ describe("kisoFs", () => {
 
   it("存在しないstatはENOENTのread_error", () => {
     const root = makeTempRoot();
+    const kisoFs = new KisoFs(root);
     expect(kisoFs.stat(join(root, "missing"))).toBeLeftWith((e) => {
       expect(e).toMatchObject({ type: "read_error", code: "ENOENT" });
     });
@@ -66,6 +80,7 @@ describe("kisoFs", () => {
 
   it("rm後はexistsがfalseになる", () => {
     const root = makeTempRoot();
+    const kisoFs = new KisoFs(root);
     const file = join(root, "target.txt");
     expect(kisoFs.writeFile(file, "x")).toBeRight();
     expect(kisoFs.exists(file)).toBe(true);
@@ -75,16 +90,19 @@ describe("kisoFs", () => {
 
   it("存在しないrmは成功扱いになる", () => {
     const root = makeTempRoot();
+    const kisoFs = new KisoFs(root);
     expect(kisoFs.rm(join(root, "missing"))).toBeRight();
   });
 
   it("存在しないexistsはfalseになる", () => {
     const root = makeTempRoot();
+    const kisoFs = new KisoFs(root);
     expect(kisoFs.exists(join(root, "missing"))).toBe(false);
   });
 
   it("存在しないディレクトリへのwriteFileはENOENTのwrite_error", () => {
     const root = makeTempRoot();
+    const kisoFs = new KisoFs(root);
     expect(
       kisoFs.writeFile(join(root, "no-such-dir", "f.txt"), "x"),
     ).toBeLeftWith((e) => {
@@ -94,6 +112,7 @@ describe("kisoFs", () => {
 
   it("ファイルを親に持つmkdirはENOTDIRのwrite_error", () => {
     const root = makeTempRoot();
+    const kisoFs = new KisoFs(root);
     const file = join(root, "f.txt");
     expect(kisoFs.writeFile(file, "x")).toBeRight();
     expect(kisoFs.mkdir(join(file, "child"))).toBeLeftWith((e) => {
@@ -103,6 +122,8 @@ describe("kisoFs", () => {
 });
 
 describe("kisoFs unexpected_error", () => {
+  const kisoFs = new KisoFs(tmpdir());
+
   it("codeなしErrorはunexpected_errorになる (read系)", () => {
     vi.spyOn(fs, "readFileSync").mockImplementation(() => {
       throw new Error("boom");

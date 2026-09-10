@@ -13,13 +13,14 @@ export const resolveProviders = (
   config: Config,
   id: string,
   providerName: string | undefined,
+  workspaceRoot: string,
 ): TE.TaskEither<
   ProviderNotFoundError | ProviderNotHitError,
   ContestProvider[]
 > =>
   providerName
     ? findProvidersByName(providerName, config)
-    : findProvidersByInput(id, config);
+    : findProvidersByInput(id, config, workspaceRoot);
 const findProvidersByName = (
   providerName: string,
   config: Config,
@@ -31,11 +32,12 @@ const findProvidersByName = (
 const findProvidersByInput = (
   id: string,
   config: Config,
+  workspaceRoot: string,
 ): TE.TaskEither<ProviderNotHitError, ContestProvider[]> => {
   const providers = config.provider;
   const option = isURL(id)
-    ? findProvidersByURL(id, providers)
-    : findProvidersById(id, providers);
+    ? findProvidersByURL(id, providers, workspaceRoot)
+    : findProvidersById(id, providers, workspaceRoot);
   return TE.fromTaskOption(
     () => ({ type: "provider_not_hit" }) satisfies ProviderNotHitError,
   )(option);

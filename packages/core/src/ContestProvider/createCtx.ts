@@ -8,14 +8,14 @@ import { Storage } from "./storage.ts";
 
 export const createCtx = (
   name: string,
-  dir: string,
+  workspaceRoot: string,
 ): BaseContext<StorageType> => {
-  const workspaceRoot = path.resolve(dir);
+  const root = path.resolve(workspaceRoot);
   const fs = {
-    providerDir: new KisoFs(path.join(workspaceRoot, name)),
-    workspaceDir: new KisoFs(workspaceRoot),
+    providerDir: new KisoFs(path.join(root, name)),
+    workspaceDir: new KisoFs(root),
   };
   const fetch = kisoFetch;
-  const storage = new Storage(name, dir);
+  const storage = new Storage(name, root);
   return { fetch, fs, storage };
 };

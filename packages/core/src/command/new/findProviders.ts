@@ -15,6 +15,7 @@ import { createCtxFromProvider } from "../../ContestProvider/createCtxFromProvid
 const findProviders =
   (
     providers: ContestProvider[],
+    workspaceRoot: string,
     isTarget: (
       provider: ContestProvider,
       ctx: BaseContext<StorageType>,
@@ -24,7 +25,7 @@ const findProviders =
     const results = await Promise.all(
       providers.map((provider) =>
         pipe(
-          isTarget(provider, createCtxFromProvider(provider)),
+          isTarget(provider, createCtxFromProvider(provider, workspaceRoot)),
           // 判定に失敗したproviderは対象外として扱い、全体の推論は続行する
           TE.getOrElse(() => T.of(false)),
         )(),
@@ -37,11 +38,17 @@ const findProviders =
 export const findProvidersByURL = (
   url: string,
   providers: ContestProvider[],
+  workspaceRoot: string,
 ): TO.TaskOption<ContestProvider[]> =>
-  findProviders(providers, (provider, ctx) => provider.isTargetUrl(ctx, url));
+  findProviders(providers, workspaceRoot, (provider, ctx) =>
+    provider.isTargetUrl(ctx, url),
+  );
 
 export const findProvidersById = (
   id: string,
   providers: ContestProvider[],
+  workspaceRoot: string,
 ): TO.TaskOption<ContestProvider[]> =>
-  findProviders(providers, (provider, ctx) => provider.isTargetId(ctx, id));
+  findProviders(providers, workspaceRoot, (provider, ctx) =>
+    provider.isTargetId(ctx, id),
+  );

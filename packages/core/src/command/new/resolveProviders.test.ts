@@ -12,6 +12,7 @@ describe("resolveProviders", () => {
       mockConfig([yukicoder, atcoder]),
       "100",
       "atcoder",
+      "/workspace",
     )();
 
     expect(result).toStrictEqualRight([atcoder]);
@@ -22,6 +23,7 @@ describe("resolveProviders", () => {
       mockConfig([mockProvider("yukicoder")]),
       "100",
       "unknown",
+      "/workspace",
     )();
 
     expect(result).toStrictEqualLeft({
@@ -38,6 +40,7 @@ describe("resolveProviders", () => {
       mockConfig([yukicoder, atcoder]),
       "100",
       undefined,
+      "/workspace",
     )();
 
     expect(result).toStrictEqualRight([yukicoder]);
@@ -51,6 +54,7 @@ describe("resolveProviders", () => {
       mockConfig([yukicoder, atcoder]),
       "https://yukicoder.me/contests/100",
       undefined,
+      "/workspace",
     )();
 
     expect(result).toStrictEqualRight([yukicoder]);
@@ -61,6 +65,7 @@ describe("resolveProviders", () => {
       mockConfig([mockProvider("yukicoder")]),
       "abc100",
       undefined,
+      "/workspace",
     )();
 
     expect(result).toStrictEqualLeft({ type: "provider_not_hit" });
@@ -74,6 +79,7 @@ describe("resolveProviders", () => {
       mockConfig([broken, yukicoder]),
       "100",
       undefined,
+      "/workspace",
     )();
 
     expect(result).toStrictEqualRight([yukicoder]);

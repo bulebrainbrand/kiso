@@ -11,11 +11,17 @@ export type ContestIdParseError = {
 export const resolveContestId = (
   provider: ContestProvider,
   input: string,
+  workspaceRoot: string,
 ): TE.TaskEither<ContestIdParseError, string> => {
   if (!isURL(input)) return TE.right(input);
   return TE.fromTaskOption<ContestIdParseError>(() => ({
     type: "contest_id_parse_error",
     input,
     provider: provider.name,
-  }))(provider.parseContestIdFromUrl(createCtxFromProvider(provider), input));
+  }))(
+    provider.parseContestIdFromUrl(
+      createCtxFromProvider(provider, workspaceRoot),
+      input,
+    ),
+  );
 };

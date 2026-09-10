@@ -187,7 +187,7 @@ export class YukiCoderService implements ContestProvider<
     const safeContestId = sanitizeSegment(contestId, "unknown");
     return pipe(
       ctx.fetch(
-        `https://yukicoder.me/api/v1/contest/id/${encodeURIComponent(safeContestId)}`,
+        `https://yukicoder.me/api/v1/contest/id/${encodeURIComponent(contestId)}`,
         undefined,
         {
           maxRetries: 3,

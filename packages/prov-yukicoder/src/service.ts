@@ -184,7 +184,6 @@ export class YukiCoderService implements ContestProvider<
     ctx: YukicoderCtx,
     contestId: string,
   ): TE.TaskEither<ProviderError, Contest> {
-    const safeContestId = sanitizeSegment(contestId, "unknown");
     return pipe(
       ctx.fetch(
         `https://yukicoder.me/api/v1/contest/id/${encodeURIComponent(contestId)}`,
@@ -223,7 +222,7 @@ export class YukiCoderService implements ContestProvider<
           TE.map(
             (allTestcases) =>
               ({
-                id: safeContestId,
+                id: contestId,
                 probrems: problems.map((probrem, i) => ({
                   id: String(probrem.ProblemId),
                   name: String(probrem.No),

@@ -200,12 +200,12 @@ describe("YukiCoderService.fetchContest", () => {
     );
   });
 
-  it("../を含むコンテストIDはサニタイズして取得する", async () => {
+  it("../を含むコンテストIDの場合もエンコードして取得する", async () => {
     const service = new YukiCoderService("yukicoder");
     const requestedUrls: string[] = [];
     const ctx = makeCtx((url) => {
       requestedUrls.push(url);
-      if (url === "https://yukicoder.me/api/v1/contest/id/.._evil") {
+      if (url === "https://yukicoder.me/api/v1/contest/id/..%2Fevil") {
         return okJson({ ...contestJson, Problems: [contestJson.Problems[0]] });
       }
       if (url === "https://yukicoder.me/problems/no/1") {
@@ -216,7 +216,7 @@ describe("YukiCoderService.fetchContest", () => {
 
     const result = await service.fetchContest(ctx, "../evil")();
     expect(result).toBeRight({
-      id: ".._evil",
+      id: "../evil",
       probrems: [
         {
           id: "101",
@@ -226,7 +226,7 @@ describe("YukiCoderService.fetchContest", () => {
       ],
     });
     expect(requestedUrls).toContain(
-      "https://yukicoder.me/api/v1/contest/id/.._evil",
+      "https://yukicoder.me/api/v1/contest/id/..%2Fevil",
     );
   });
 
@@ -235,7 +235,7 @@ describe("YukiCoderService.fetchContest", () => {
     const requestedUrls: string[] = [];
     const ctx = makeCtx((url) => {
       requestedUrls.push(url);
-      if (url === "https://yukicoder.me/api/v1/contest/id/a_b%3Fc%23d") {
+      if (url === "https://yukicoder.me/api/v1/contest/id/a%2Fb%3Fc%23d") {
         return okJson({ ...contestJson, Problems: [contestJson.Problems[0]] });
       }
       if (url === "https://yukicoder.me/problems/no/1") {
@@ -246,7 +246,7 @@ describe("YukiCoderService.fetchContest", () => {
 
     const result = await service.fetchContest(ctx, "a/b?c#d")();
     expect(result).toBeRight({
-      id: "a_b?c#d",
+      id: "a/b?c#d",
       probrems: [
         {
           id: "101",

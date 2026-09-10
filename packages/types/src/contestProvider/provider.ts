@@ -1,7 +1,7 @@
 import type * as TE from "fp-ts/TaskEither";
 import type * as TO from "fp-ts/TaskOption";
 
-import type { Contest } from "../contest.ts";
+import type { Contest, Probrem } from "../contest.ts";
 import type { ValidationError } from "../errors.ts";
 import type { BaseContext } from "./context.ts";
 import type { FetchError } from "./fetch.ts";
@@ -46,5 +46,34 @@ export interface ContestProvider<
   getContestDirectory(
     ctx: BaseContext<S>,
     contest: Contest,
+  ): TE.TaskEither<ProviderError, string>;
+
+  getProbremDirectory(
+    ctx: BaseContext<S>,
+    contest: Contest,
+    probrem: Probrem,
+  ): TE.TaskEither<ProviderError, string>;
+
+  getSingleProbremDirectory(
+    ctx: BaseContext<S>,
+    contest: Contest,
+    probrem: Probrem,
+  ): TE.TaskEither<ProviderError, string>;
+
+  createContestDirectory(
+    ctx: BaseContext<S>,
+    contest: Contest,
+  ): TE.TaskEither<ProviderError, string>;
+
+  createProbremDirectory(
+    ctx: BaseContext<S>,
+    contest: Contest,
+    probrem: Probrem,
+  ): TE.TaskEither<ProviderError, string>;
+
+  createSingleProbremDirectory(
+    ctx: BaseContext<S>,
+    contest: Contest,
+    probrem: Probrem,
   ): TE.TaskEither<ProviderError, string>;
 }

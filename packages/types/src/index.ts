@@ -6,7 +6,5 @@ export * from "./contestProvider/schema.ts";
 export * from "./contestProvider/storage.ts";
 export * from "./contestProvider/fetch.ts";
 export * from "./fs.ts";
-export * from "./languagePlugin/context.ts";
 export * from "./languagePlugin/index.ts";
-export * from "./languagePlugin/schema.ts";
 export * from "./errors.ts";

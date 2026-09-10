@@ -275,9 +275,6 @@ importers:
       '@kiso/vitest-plugin-fp-ts':
         specifier: workspace:*
         version: link:../vitest-plugin-fp-ts
-      '@types/node':
-        specifier: 'catalog:'
-        version: 24.13.3
 
   packages/lang-typescript:
     dependencies:

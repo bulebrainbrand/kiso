@@ -1,4 +1,3 @@
-import { cons } from "fp-ts/lib/ReadonlyNonEmptyArray.js";
 import * as TE from "fp-ts/TaskEither";
 import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 

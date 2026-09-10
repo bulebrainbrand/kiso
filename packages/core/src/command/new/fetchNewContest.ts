@@ -1,4 +1,4 @@
-import type { Contest, ContestProvider, ProviderError } from "@kiso/types";
+import type { ContestProvider, ProviderError } from "@kiso/types";
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
 

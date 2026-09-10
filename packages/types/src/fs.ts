@@ -20,4 +20,5 @@ export type FsContext = {
   writeFile(path: string, content: string): E.Either<FsError, void>;
   mkdir(path: string): E.Either<FsError, void>;
   rm(path: string): E.Either<FsError, void>;
+  readonly rootDir: string;
 };

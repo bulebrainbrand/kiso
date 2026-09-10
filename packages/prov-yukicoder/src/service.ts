@@ -70,7 +70,10 @@ export class YukiCoderService implements ContestProvider<
     contestPath: string,
     probrem: Probrem,
   ): TE.TaskEither<ProviderError, void> {
-    const testCaseDir = this.getTestCaseDirectory(contestPath);
+    const testCaseDir = path.join(
+      this.getTestCaseDirectory(contestPath),
+      probrem.id,
+    );
     return pipe(
       TE.fromEither(ctx.fs.providerDir.mkdir(testCaseDir)),
       TE.chainW(() =>

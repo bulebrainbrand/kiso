@@ -1,3 +1,5 @@
+import { join } from "node:path";
+
 import type { BaseContext } from "@kiso/types";
 import type { FetchError } from "@kiso/types";
 import * as TE from "fp-ts/TaskEither";
@@ -44,7 +46,10 @@ const makeCtx = (
       return handler(url);
     }) as YukicoderCtx["fetch"],
     storage: {} as YukicoderCtx["storage"],
-    fs: {} as YukicoderCtx["fs"],
+    fs: {
+      providerDir: { rootDir: "test-root" },
+      workspaceDir: { rootDir: "test-root" },
+    } as YukicoderCtx["fs"],
   }) as YukicoderCtx;
 
 const okJson = (body: unknown) =>
@@ -282,6 +287,6 @@ describe("YukiCoderService.getContestDirectory", () => {
 
     expect(
       await service.getContestDirectory(ctx, { id: "123", probrems: [] })(),
-    ).toBeRight("./123");
+    ).toBeRight(join("test-root", "123"));
   });
 });

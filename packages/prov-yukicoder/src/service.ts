@@ -1,7 +1,11 @@
+import path from "path";
+
 import {
+  TEST_CASE_DIR_NAME,
   type BaseContext,
   type Contest,
   type ContestProvider,
+  type Probrem,
   type ProviderError,
   type TestCase,
   type UnexpectedError,
@@ -27,6 +31,85 @@ export class YukiCoderService implements ContestProvider<
   { API_KEY: string }
 > {
   constructor(readonly name: string) {}
+  private getTestCaseDirectory(contestDir: string): string {
+    return path.join(contestDir, TEST_CASE_DIR_NAME);
+  }
+  getSingleProbremDirectory(
+    ctx: BaseContext<{ API_KEY: string }>,
+    contest: Contest,
+    probrem: Probrem,
+  ): TE.TaskEither<ProviderError, string> {
+    return TE.right(
+      path.join(ctx.fs.providerDir.rootDir, "single_" + probrem.id),
+    );
+  }
+  createContestDirectory(
+    ctx: BaseContext<{ API_KEY: string }>,
+    contest: Contest,
+  ): TE.TaskEither<ProviderError, string> {
+    return pipe(
+      this.getContestDirectory(ctx, contest),
+      TE.chainW((dir) =>
+        pipe(
+          TE.fromEither(ctx.fs.providerDir.mkdir(dir)),
+          TE.chainW(() =>
+            pipe(
+              contest.probrems.map((probrem) =>
+                this.createProbremTestCase(ctx, dir, probrem),
+              ),
+              TE.sequenceArray,
+            ),
+          ),
+          TE.map(() => dir),
+        ),
+      ),
+    );
+  }
+  private createProbremTestCase(
+    ctx: BaseContext<{ API_KEY: string }>,
+    contestPath: string,
+    probrem: Probrem,
+  ): TE.TaskEither<ProviderError, void> {
+    const testCaseDir = this.getTestCaseDirectory(contestPath);
+    return pipe(
+      TE.fromEither(ctx.fs.providerDir.mkdir(testCaseDir)),
+      TE.chainW(() =>
+        pipe(
+          probrem.testcases.flatMap((testcase) => [
+            TE.fromEither(
+              ctx.fs.providerDir.writeFile(
+                path.join(testCaseDir, `${testcase.name}_in.txt`),
+                testcase.input,
+              ),
+            ),
+            TE.fromEither(
+              ctx.fs.providerDir.writeFile(
+                path.join(testCaseDir, `${testcase.name}_out.txt`),
+                testcase.output,
+              ),
+            ),
+          ]),
+          TE.sequenceArray,
+        ),
+      ),
+      TE.map(() => {}),
+    );
+  }
+  createSingleProbremDirectory(
+    ctx: BaseContext<{ API_KEY: string }>,
+    contest: Contest,
+    probrem: Probrem,
+  ): TE.TaskEither<ProviderError, string> {
+    return pipe(
+      this.getSingleProbremDirectory(ctx, contest, probrem),
+      TE.chainW((dir) =>
+        pipe(
+          TE.fromEither(ctx.fs.providerDir.mkdir(dir)),
+          TE.map(() => dir),
+        ),
+      ),
+    );
+  }
   isTargetUrl(
     ctx: BaseContext<{ API_KEY: string }>,
     url: string,
@@ -59,7 +142,7 @@ export class YukiCoderService implements ContestProvider<
     ctx: BaseContext<{ API_KEY: string }>,
     contest: Contest,
   ): TE.TaskEither<ProviderError, string> {
-    return TE.right(`./${contest.id}`);
+    return TE.right(path.join(ctx.fs.providerDir.rootDir, contest.id));
   }
   loginSchema = v.object({ API_KEY: v.string() });
   login(ctx: YukicoderCtx, credentials: YukicoderLoginOutput) {

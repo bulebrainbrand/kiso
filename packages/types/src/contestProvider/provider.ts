@@ -48,12 +48,6 @@ export interface ContestProvider<
     contest: Contest,
   ): TE.TaskEither<ProviderError, string>;
 
-  getProbremDirectory(
-    ctx: BaseContext<S>,
-    contest: Contest,
-    probrem: Probrem,
-  ): TE.TaskEither<ProviderError, string>;
-
   getSingleProbremDirectory(
     ctx: BaseContext<S>,
     contest: Contest,
@@ -63,12 +57,6 @@ export interface ContestProvider<
   createContestDirectory(
     ctx: BaseContext<S>,
     contest: Contest,
-  ): TE.TaskEither<ProviderError, string>;
-
-  createProbremDirectory(
-    ctx: BaseContext<S>,
-    contest: Contest,
-    probrem: Probrem,
   ): TE.TaskEither<ProviderError, string>;
 
   createSingleProbremDirectory(

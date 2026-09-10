@@ -7,7 +7,7 @@
   kiso.contest.json
   <lang>/
     # lang pluginがa.tsなどを構築する
-  testcases/
+  __test_case__/
     <probrem-name>/
       <testcase-name>_in.txt
       <testcase-name>_out.txt

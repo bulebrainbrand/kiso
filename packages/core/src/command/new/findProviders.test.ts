@@ -26,6 +26,11 @@ const mockProvider = (
   isTargetId: () => toTaskEither(isTarget.id),
   parseContestIdFromUrl: () => async () => O.none,
   getContestDirectory: () => TE.right(`./${name}`),
+  getSingleProbremDirectory: (_ctx, contest, probrem) =>
+    TE.right(`./${contest.id}_${probrem.id}`),
+  createContestDirectory: (_ctx, contest) => TE.right(`./${contest.id}`),
+  createSingleProbremDirectory: (_ctx, contest, probrem) =>
+    TE.right(`./${contest.id}_${probrem.id}`),
 });
 
 describe("findProvidersByURL", () => {

@@ -263,6 +263,22 @@ importers:
         specifier: 'catalog:'
         version: 24.13.3
 
+  packages/judge:
+    dependencies:
+      fp-ts:
+        specifier: 'catalog:'
+        version: 2.16.11
+    devDependencies:
+      '@kiso/types':
+        specifier: workspace:*
+        version: link:../types
+      '@kiso/vitest-plugin-fp-ts':
+        specifier: workspace:*
+        version: link:../vitest-plugin-fp-ts
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.13.3
+
   packages/lang-typescript:
     dependencies:
       fp-ts:

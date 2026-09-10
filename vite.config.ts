@@ -50,6 +50,8 @@ export default defineConfig({
         command: [
           "vp -C packages/vitest-plugin-fp-ts pack --logLevel=silent",
           "vp -C packages/types pack --logLevel=silent",
+          "vp -C packages/judge pack --logLevel=silent",
+          "vp -C packages/lang-typescript pack --logLevel=silent",
           "vp -C packages/core pack --logLevel=silent",
           "vp -C packages/prov-yukicoder pack --logLevel=silent",
         ],

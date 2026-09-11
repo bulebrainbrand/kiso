@@ -3,13 +3,13 @@ import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
 
 import { createCtxFromProvider } from "../../ContestProvider/createCtxFromProvider.ts";
-import type { NewCommandSuccess } from "./entry.ts";
+import type { NewContestData } from "./entry.ts";
 
 export const fetchNewContest = (
   provider: ContestProvider,
   contestId: string,
   workspaceRoot: string,
-): TE.TaskEither<ProviderError, NewCommandSuccess> =>
+): TE.TaskEither<ProviderError, NewContestData> =>
   pipe(
     provider.fetchContest(
       createCtxFromProvider(provider, workspaceRoot),

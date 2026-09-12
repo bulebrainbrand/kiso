@@ -3,6 +3,8 @@ import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
 
 import { readConfig, type ReadConfigError } from "../../config/index.ts";
+import { createCtxFromProvider } from "../../ContestProvider/createCtxFromProvider.ts";
+import { resolveLanguagePlugin } from "../../languageResolver.ts";
 import {
   ensureSingleProvider,
   type ProviderAmbiguousError,
@@ -32,19 +34,25 @@ export type NewCommandError =
   | ProviderError;
 export type NewCommandInput = {
   id: string;
-  languages?: string[];
+  langFlags?: string[];
+  langSetFlags?: string[];
   provider?: string;
 };
-export type NewCommandSuccess = {
+export type NewContestData = {
   provider: ContestProvider;
   contest: Contest;
   contestId: string;
 };
 
 export const executeNewCommand = (
-  { id, provider: providerName }: NewCommandInput,
+  {
+    id,
+    provider: providerName,
+    langFlags = [],
+    langSetFlags = [],
+  }: NewCommandInput,
   cwd: string,
-): TE.TaskEither<NewCommandError, NewCommandSuccess> =>
+): TE.TaskEither<NewCommandError, void> =>
   pipe(
     readConfig(cwd),
     TE.chainW(({ config, workspaceRoot }) =>
@@ -59,6 +67,14 @@ export const executeNewCommand = (
             ),
           ),
         ),
+        TE.chainW(({ contest, contestId, provider }) => {
+          const ctx = createCtxFromProvider(provider, workspaceRoot);
+          return provider.createContestDirectory(ctx, contest);
+        }),
+        TE.map(() => {
+          return resolveLanguagePlugin(langFlags, langSetFlags, config);
+        }),
       ),
     ),
+    TE.map((...arg: unknown[]) => {}),
   );
